@@ -1,0 +1,35 @@
+<!--
+  This template loads for the 'tab.friend-detail' state (app.js)
+  'friend' is a $scope variable created in the FriendsCtrl controller (controllers.js)
+  The FriendsCtrl pulls data from the Friends service (service.js)
+  The Friends service returns an array of friend data
+-->
+<ion-view view-title="{{ctrl.device.name}}">
+  <ion-content class="padding">
+    	Name: <h3>{{ctrl.device.name}}</h3>
+    	Address: <h5>{{ctrl.device.address}}</h5>
+    	Id: <h5>{{ctrl.device.id}}</h5>
+    	Class: <h5>{{ctrl.device.class}}</h5>
+
+ <div class="row">
+      <div class="col text-center">
+          <button ng-show="ctrl.connectVisible" ng-click="ctrl.Connect()" class="button button-positive">Connect to device</button>
+      </div>
+  </div>
+
+	<div class="padding">
+    <label class="item item-input">
+      <span class="input-label">Type message here:</span>
+      <input type="text" ng-model="ctrl.messageText">
+    </label>
+		<button class="button button-positive" ng-click="ctrl.SendMessage()">Send</button>
+
+		<ion-list class="padding-top">
+			<ion-item ng-repeat="message in ctrl.messages">
+				<div ng-class="ctrl.GetMessageClass(message)">{{message.text}}</div><div>{{message.status}}</div>
+			</ion-item>
+		</ion-list>
+	</div>
+
+  </ion-content>
+</ion-view>
