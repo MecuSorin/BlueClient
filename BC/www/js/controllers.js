@@ -36,9 +36,9 @@ angular.module('starter.controllers', [])
       messages: MessagesService.GetMessages($stateParams.deviceId)
     };
 
-    controller.Connect = function() {
+    controller.Connect = function(secure) { // secure is a bool that specifies what type of connection
         controller.connectVisible = false;
-        var chatingStatus = MessagesService.StartListeningDevice(controller.device);
+        var chatingStatus = MessagesService.StartListeningDevice(controller.device, secure);
         controller.scope.$on('$destroy', function() {
           chatingStatus.chatDeferrer.resolve();
         });

@@ -4,6 +4,7 @@
 //       discoverUnpaired: function(a,b) { a(devices); },
 //       write: function(text, a, b) { a(); },
 //       connect: function(id, a, b) { a(); },
+//       connectInsecure: function(id, a, b) { a(); },
 //       subscribe: function(limiter, a, b) { /*b('fake subscribe error');*/setInterval(function(){  a(); }, 5000);  },
 //       readUntil: function(limiter, a, b) { /*b('fake read error'); */a("fake read\n"); }
 //      };
@@ -117,7 +118,7 @@ angular.module('starter.services', [])
         ErrorsService.addError("Getting messages for device ...");
         return GetMessagesWithDevice(device);
       },
-      StartListeningDevice: function(device, refreshCallback) {
+      StartListeningDevice: function(device, secure) {  //bool that choose the type of connection
         var connectDeferrer = $q.defer();
         var chatDeferrer = $q.defer();
         var result = { 
@@ -126,7 +127,8 @@ angular.module('starter.services', [])
           chatDeferrer: chatDeferrer 
         };
         var deviceBlueeToothId = GetDeviceBluetoothIdentifier(device);
-        bluetoothSerial.connect(deviceBlueeToothId, 
+        var connectMethod = (secure ? bluetoothSerial.connect : bluetoothSerial.connectInsecure); 
+        connectMethod(deviceBlueeToothId, 
           function() {  //on connect
             connectDeferrer.resolve();
             ErrorsService.addError("Connected...");
