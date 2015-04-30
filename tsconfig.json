@@ -1,0 +1,25 @@
+{
+    "compilerOptions": {
+        "out": "blueclient.js",
+        "sourceMap": true,
+        "target": "es5"
+    },
+    "filesGlob": [
+        "./BC/www/**/*.ts",
+        "!./BC/node_modules/**/*.ts"
+    ],
+    "files": [
+        "./BC/www/js/0_typings/angularjs/angular-route.d.ts",
+        "./BC/www/js/0_typings/angularjs/angular.d.ts",
+        "./BC/www/js/0_typings/jquery/jquery.d.ts",
+        "./BC/www/js/1_Bootstrap/app.bootstrap.ts",
+        "./BC/www/js/1_Bootstrap/interfaces.d.ts",
+        "./BC/www/js/2_Services/BluetoothDevicesService.ts",
+        "./BC/www/js/2_Services/ErrorsService.ts",
+        "./BC/www/js/2_Services/MessagesService.ts",
+        "./BC/www/js/2_Services/bluetoothSerial_mock.ts",
+        "./BC/www/js/3_Controllers/BlueChatDetailCtrl.ts",
+        "./BC/www/js/3_Controllers/DevicesController.ts",
+        "./BC/www/js/3_Controllers/ErrorController.ts"
+    ]
+}

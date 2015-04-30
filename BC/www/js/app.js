@@ -1,6 +1,9 @@
+/// <reference path="app.bootstrap.ts" />
+
 // Ionic Starter App
 
-angular.module('starter', ['ionic', 'starter.services', 'starter.controllers'])
+
+angular.module('starter', ['ionic', 'blueclient.services', 'blueclient.controllers'])
 
 .run(function ($ionicPlatform, $rootScope) {
 

@@ -3,14 +3,14 @@
     <ion-content>
         <div class="row">
             <div class="col text-center">
-                <button ng-click="RefreshDevicesList()" class="button button-positive">Search again</button>
+                <button ng-click="devicesCtrl.RefreshDevicesList()" class="button button-positive">Search again</button>
             </div>
         </div>
      
         <ion-list>
             <div class="item item-divider">Detected nearby paired bluetooth devices:</div>
             <ion-item class="item-remove-animate item-avatar item-icon-right"
-                      ng-repeat="device in pairedDevicesList" type="item-text-wrap" href="#/tab/blueDeviceChat/{{device.id}}">
+                      ng-repeat="device in devicesCtrl.pairedDevicesList" type="item-text-wrap" href="#/tab/blueDeviceChat/{{device.id}}">
                 <h2>{{device.name}}</h2>
                 <h4>{{device.address}}</h4>
                 <i class="icon ion-chevron-right icon-accessory"></i>
@@ -19,7 +19,7 @@
          <ion-list>
             <div class="item item-divider">Detected nearby unpaired bluetooth devices:</div>
             <ion-item class="item-remove-animate item-avatar item-icon-right"
-                      ng-repeat="device in unpairedDevicesList" type="item-text-wrap" href="#/tab/blueDeviceChat/{{device.id}}">
+                      ng-repeat="device in devicesCtrl.unpairedDevicesList" type="item-text-wrap" href="#/tab/blueDeviceChat/{{device.id}}">
                 <h2>{{device.name}}</h2>
                 <h4>{{device.address}}</h4>
                 <i class="icon ion-chevron-right icon-accessory"></i>
