@@ -15,5 +15,5 @@ module blueclient.mocks {
 }
 
 module blueclient {
-	export var bluetoothSerial = new mocks.BluetoothSerialMock();
+	//export var bluetoothSerial = new mocks.BluetoothSerialMock();
 }

@@ -3,7 +3,7 @@
 // Ionic Starter App
 
 
-angular.module('starter', ['ionic', 'blueclient.services', 'blueclient.controllers'])
+angular.module('starter', ['ionic', 'ui.bootstrap', 'blueclient.services', 'blueclient.controllers'])
 
 .run(function ($ionicPlatform, $rootScope) {
 

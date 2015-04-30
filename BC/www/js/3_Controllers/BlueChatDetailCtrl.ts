@@ -14,16 +14,26 @@ module blueclient {
   		this.$scope.ctrl = this;
   	}
 
-  	public connectVisible: boolean = true;
   	public messageText: string = "";
   	public device: IBluetoothDevice = null;
   	public messages: IMessage[] = [];
+    public selectedTime = new Date();
+    public selectedTemperature: string = "2";
+
+    public isDateValid: boolean = true;
+    public isConnected: boolean = false;
 
   	private RefreshScope = () => {
   		if (!this.$scope.$$phase) { 
   			this.$scope.$apply();
   		}
-  	}
+  	};
+
+
+
+    public UpdateSendState = ()=> {
+      this.isDateValid = Message.isValidDate(this.selectedTime);
+    };
 
   	private  OnMessageReceived = (message:IMessage) => {
     	var a = this.messages;
@@ -32,19 +42,26 @@ module blueclient {
     	this.RefreshScope();
     };
 
+    private onConnection= () => { this.isConnected = true; };
+    private onDisconnection = () => { this.isConnected = false };
+
   	public Connect = (secure:boolean) => { // secure is a bool that specifies what type of connection
-    	this.connectVisible = false;
-    	var messagesPipe = this.MessagesService.StartListeningDevice(this.device, secure);
+    	this.isConnected= false;
+    	var messagesPipe: MessagesPipe = this.MessagesService.StartListeningDevice(this.device, secure);
+      messagesPipe.connectPromise.then(this.onConnection, this.onDisconnection);
     	this.$scope.$on('$destroy', function() {
       		messagesPipe.chatDeferrer.resolve();
     	});
-		  messagesPipe.chatDeferrer.promise.then(null, null, this.OnMessageReceived);
+		  messagesPipe.chatDeferrer.promise.then(this.onConnection, this.onDisconnection, this.OnMessageReceived);
     };
-    
+
   	public SendMessage = () => {
-      	this.MessagesService.SendMessage(this.device, this.messageText);
+      this.messageText = Message.ComposeMessage(this.selectedTime, this.selectedTemperature);
+      if(this.messageText !== "") {
+        this.MessagesService.SendMessage(this.device, this.messageText);
       	this.messageText = "";
       	this.RefreshScope();
+      }
 		};
     
   	public GetMessageClass = (message) => {

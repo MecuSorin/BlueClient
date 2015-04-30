@@ -10,7 +10,29 @@ module blueclient {
 
     public static FakeMessage = new Message(true, "fake", "fake");
 
-    public static MessageEndingChar = '\n';
+    public static MessageEndingChar = '#';
+    public static MessageStartingChar = '*';
+    public static MessageSeparatorChar = '_';
+
+    public static isValidDate(date): boolean {
+      if ( Object.prototype.toString.call(date) !== "[object Date]" )
+        return false;
+      return !isNaN(date.getTime());
+    }
+
+    public static ComposeMessage(selectedTime, selectedTemperature: string): string {
+      var temp = ["1", "2", "3"].indexOf(selectedTemperature);
+      if (0 > temp) { return "";}
+      if (!Message.isValidDate(selectedTime)) { return ""; }
+
+      return Message.MessageStartingChar
+            +selectedTemperature
+            +Message.MessageSeparatorChar
+            +selectedTime.getHours()
+            +":"
+            +selectedTime.getMinutes()
+            +Message.MessageEndingChar;
+    }
   }
 
 	export class MessagesPipe {
@@ -40,7 +62,7 @@ module blueclient {
       	var chatWithId = this.GetMessagesWithDeviceId(deviceId);
         var newMessageStatus =  (byMe) ? 'pending' : 'received';
       	var result = new Message(byMe, text, newMessageStatus);
-      	chatWithId.push(result);
+      	chatWithId.unshift(result);
       	return result;
   	};
 
@@ -64,40 +86,40 @@ module blueclient {
     	var result = new MessagesPipe(device, connectDeferrer.promise, chatDeferrer);
     		
 			var deviceBlueeToothId = MessagesService.GetDeviceBluetoothIdentifier(device);
-        	var connectMethod = (secure ? bluetoothSerial.connect : bluetoothSerial.connectInsecure); 
-        	connectMethod(deviceBlueeToothId, 
-          		() => {  //on connect
-            		connectDeferrer.resolve();
-            		this.ErrorsService.addError("Connected...");
-            	
-            		bluetoothSerial.subscribe('n', 
-              			() => { // on subscribe
-                			this.ErrorsService.addError("registered for data reading");
-                			var untypedChatDeferrerPromise = <any>chatDeferrer.promise;
-                			if(0 === untypedChatDeferrerPromise.$$state.status) { //pending
-                  				bluetoothSerial.readUntil(Message.MessageEndingChar, 
-				                    data => { //on readuntil success
-                      					if(data) { 
-                        					this.ErrorsService.addError("received message");
-                        					var receivedMessage = this.AddMessage(false, device.id, data);
-                        					chatDeferrer.notify(receivedMessage); 
-                  						}
-                    				}, error => { //on readuntil error
-                      					this.ErrorsService.addError("Failed to read data");
-                      					chatDeferrer.reject(error);
-                    				});
-                			}
-              			}, error => { //on subscribe error
-                			this.ErrorsService.addError("Failed to listen device");
-                			chatDeferrer.reject(error);
-              			});
-          		}, error => { //on connect error
- 					connectDeferrer.reject(error);
-            		chatDeferrer.reject(error);
-          		});
-        	return result;
-      	}
-    }
+      var connectMethod = (secure ? bluetoothSerial.connect : bluetoothSerial.connectInsecure); 
+      connectMethod(deviceBlueeToothId, 
+        () => {  //on connect
+          connectDeferrer.resolve();
+          this.ErrorsService.addError("Connected...");
+
+          bluetoothSerial.subscribe('n', 
+            () => { // on subscribe
+              this.ErrorsService.addError("registered for data reading");
+              var untypedChatDeferrerPromise = <any>chatDeferrer.promise;
+              if(0 === untypedChatDeferrerPromise.$$state.status) { //pending
+                bluetoothSerial.readUntil(Message.MessageEndingChar, 
+                  data => { //on readuntil success
+                    if(data) { 
+                      this.ErrorsService.addError("received message");
+                      var receivedMessage = this.AddMessage(false, device.id, data);
+                      chatDeferrer.notify(receivedMessage); 
+                    }
+                  }, error => { //on readuntil error
+                    this.ErrorsService.addError("Failed to read data");
+                    chatDeferrer.reject(error);
+                });
+              }
+            }, error => { //on subscribe error
+              this.ErrorsService.addError("Failed to listen device");
+              chatDeferrer.reject(error);
+          });
+        }, error => { //on connect error
+          connectDeferrer.reject(error);
+          chatDeferrer.reject(error);
+      });
+      return result;
+  	}
+  }
 
 	blueclientServices.service(MessagesService.Alias, MessagesService);
 }

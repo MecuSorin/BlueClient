@@ -13,7 +13,7 @@ module blueclient {
 		public static Alias="ErrorsService";
 		public Errors: Error[] = [];
 		public addError = (message: any) => {
-			this.Errors.push( new Error(message));
+			this.Errors.unshift( new Error(message));
 		}
 	}
 	blueclientServices.service(ErrorsService.Alias, ErrorsService);

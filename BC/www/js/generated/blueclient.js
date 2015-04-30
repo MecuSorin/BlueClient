@@ -18,7 +18,7 @@ var blueclient;
             this.listPairedDevices = function () {
                 var deferred = _this.$q.defer();
                 try {
-                    blueclient.bluetoothSerial.list(function (devicesFound) {
+                    bluetoothSerial.list(function (devicesFound) {
                         deferred.resolve(devicesFound);
                         _this.pairedList = devicesFound;
                     }, function (reason) {
@@ -35,7 +35,7 @@ var blueclient;
             this.listUnPairedDevices = function () {
                 var deferred = _this.$q.defer();
                 try {
-                    blueclient.bluetoothSerial.discoverUnpaired(function (devicesFound) {
+                    bluetoothSerial.discoverUnpaired(function (devicesFound) {
                         deferred.resolve(devicesFound);
                         _this.unpairedList = devicesFound;
                     }, function (reason) {
@@ -92,7 +92,7 @@ var blueclient;
             var _this = this;
             this.Errors = [];
             this.addError = function (message) {
-                _this.Errors.push(new Error(message));
+                _this.Errors.unshift(new Error(message));
             };
         }
         ErrorsService.Alias = "ErrorsService";
@@ -113,9 +113,32 @@ var blueclient;
             this.id = 1 + Message.lastMessageId;
             Message.lastMessageId += 1;
         }
+        Message.isValidDate = function (date) {
+            if (Object.prototype.toString.call(date) !== "[object Date]")
+                return false;
+            return !isNaN(date.getTime());
+        };
+        Message.ComposeMessage = function (selectedTime, selectedTemperature) {
+            var temp = ["1", "2", "3"].indexOf(selectedTemperature);
+            if (0 > temp) {
+                return "";
+            }
+            if (!Message.isValidDate(selectedTime)) {
+                return "";
+            }
+            return Message.MessageStartingChar
+                + selectedTemperature
+                + Message.MessageSeparatorChar
+                + selectedTime.getHours()
+                + ":"
+                + selectedTime.getMinutes()
+                + Message.MessageEndingChar;
+        };
         Message.lastMessageId = 0;
         Message.FakeMessage = new Message(true, "fake", "fake");
-        Message.MessageEndingChar = '\n';
+        Message.MessageEndingChar = '#';
+        Message.MessageStartingChar = '*';
+        Message.MessageSeparatorChar = '_';
         return Message;
     })();
     blueclient.Message = Message;
@@ -145,12 +168,12 @@ var blueclient;
                 var chatWithId = _this.GetMessagesWithDeviceId(deviceId);
                 var newMessageStatus = (byMe) ? 'pending' : 'received';
                 var result = new Message(byMe, text, newMessageStatus);
-                chatWithId.push(result);
+                chatWithId.unshift(result);
                 return result;
             };
             this.SendMessage = function (device, text) {
                 var message = _this.AddMessage(true, device.id, text + '\n');
-                blueclient.bluetoothSerial.write(text, function () { message.status = 'sent'; }, function (error) { message.status = 'failed'; });
+                bluetoothSerial.write(text, function () { message.status = 'sent'; }, function (error) { message.status = 'failed'; });
             };
             this.GetMessages = function (deviceId) {
                 _this.ErrorsService.addError("Getting messages for device ...");
@@ -161,15 +184,15 @@ var blueclient;
                 var chatDeferrer = _this.$q.defer();
                 var result = new MessagesPipe(device, connectDeferrer.promise, chatDeferrer);
                 var deviceBlueeToothId = MessagesService.GetDeviceBluetoothIdentifier(device);
-                var connectMethod = (secure ? blueclient.bluetoothSerial.connect : blueclient.bluetoothSerial.connectInsecure);
+                var connectMethod = (secure ? bluetoothSerial.connect : bluetoothSerial.connectInsecure);
                 connectMethod(deviceBlueeToothId, function () {
                     connectDeferrer.resolve();
                     _this.ErrorsService.addError("Connected...");
-                    blueclient.bluetoothSerial.subscribe('n', function () {
+                    bluetoothSerial.subscribe('n', function () {
                         _this.ErrorsService.addError("registered for data reading");
                         var untypedChatDeferrerPromise = chatDeferrer.promise;
                         if (0 === untypedChatDeferrerPromise.$$state.status) {
-                            blueclient.bluetoothSerial.readUntil(Message.MessageEndingChar, function (data) {
+                            bluetoothSerial.readUntil(Message.MessageEndingChar, function (data) {
                                 if (data) {
                                     _this.ErrorsService.addError("received message");
                                     var receivedMessage = _this.AddMessage(false, device.id, data);
@@ -227,10 +250,6 @@ var blueclient;
         mocks.BluetoothSerialMock = BluetoothSerialMock;
     })(mocks = blueclient.mocks || (blueclient.mocks = {}));
 })(blueclient || (blueclient = {}));
-var blueclient;
-(function (blueclient) {
-    blueclient.bluetoothSerial = new blueclient.mocks.BluetoothSerialMock();
-})(blueclient || (blueclient = {}));
 /// <reference path="../1_Bootstrap/app.bootstrap.ts" />
 var blueclient;
 (function (blueclient) {
@@ -239,14 +258,20 @@ var blueclient;
             var _this = this;
             this.$scope = $scope;
             this.MessagesService = MessagesService;
-            this.connectVisible = true;
             this.messageText = "";
             this.device = null;
             this.messages = [];
+            this.selectedTime = new Date();
+            this.selectedTemperature = "2";
+            this.isDateValid = true;
+            this.isConnected = false;
             this.RefreshScope = function () {
                 if (!_this.$scope.$$phase) {
                     _this.$scope.$apply();
                 }
+            };
+            this.UpdateSendState = function () {
+                _this.isDateValid = blueclient.Message.isValidDate(_this.selectedTime);
             };
             this.OnMessageReceived = function (message) {
                 var a = _this.messages;
@@ -254,18 +279,24 @@ var blueclient;
                 _this.messages = a;
                 _this.RefreshScope();
             };
+            this.onConnection = function () { _this.isConnected = true; };
+            this.onDisconnection = function () { _this.isConnected = false; };
             this.Connect = function (secure) {
-                _this.connectVisible = false;
+                _this.isConnected = false;
                 var messagesPipe = _this.MessagesService.StartListeningDevice(_this.device, secure);
+                messagesPipe.connectPromise.then(_this.onConnection, _this.onDisconnection);
                 _this.$scope.$on('$destroy', function () {
                     messagesPipe.chatDeferrer.resolve();
                 });
-                messagesPipe.chatDeferrer.promise.then(null, null, _this.OnMessageReceived);
+                messagesPipe.chatDeferrer.promise.then(_this.onConnection, _this.onDisconnection, _this.OnMessageReceived);
             };
             this.SendMessage = function () {
-                _this.MessagesService.SendMessage(_this.device, _this.messageText);
-                _this.messageText = "";
-                _this.RefreshScope();
+                _this.messageText = blueclient.Message.ComposeMessage(_this.selectedTime, _this.selectedTemperature);
+                if (_this.messageText !== "") {
+                    _this.MessagesService.SendMessage(_this.device, _this.messageText);
+                    _this.messageText = "";
+                    _this.RefreshScope();
+                }
             };
             this.GetMessageClass = function (message) {
                 if (!message.mine) {
