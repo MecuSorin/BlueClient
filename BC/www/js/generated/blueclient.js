@@ -118,6 +118,12 @@ var blueclient;
                 return false;
             return !isNaN(date.getTime());
         };
+        Message.pad = function (num, size) {
+            var s = num + "";
+            while (s.length < size)
+                s = "0" + s;
+            return s;
+        };
         Message.ComposeMessage = function (selectedTime, selectedTemperature) {
             var temp = ["1", "2", "3"].indexOf(selectedTemperature);
             if (0 > temp) {
@@ -126,12 +132,13 @@ var blueclient;
             if (!Message.isValidDate(selectedTime)) {
                 return "";
             }
-            return Message.MessageStartingChar
+            return Message.MessageEndingChar
+                + Message.MessageStartingChar
                 + selectedTemperature
                 + Message.MessageSeparatorChar
-                + selectedTime.getHours()
+                + Message.pad(selectedTime.getHours(), 2)
                 + ":"
-                + selectedTime.getMinutes()
+                + Message.pad(selectedTime.getMinutes(), 2)
                 + Message.MessageEndingChar;
         };
         Message.lastMessageId = 0;
@@ -261,7 +268,7 @@ var blueclient;
             this.messageText = "";
             this.device = null;
             this.messages = [];
-            this.selectedTime = new Date();
+            this.selectedTime = new Date().setHours(0, 0, 0, 0);
             this.selectedTemperature = "2";
             this.isDateValid = true;
             this.isConnected = false;

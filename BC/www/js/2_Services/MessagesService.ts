@@ -20,17 +20,24 @@ module blueclient {
       return !isNaN(date.getTime());
     }
 
+    public static pad(num: number, size: number): string {
+        var s = num+"";
+        while (s.length < size) s = "0" + s;
+        return s;
+    }
+
     public static ComposeMessage(selectedTime, selectedTemperature: string): string {
       var temp = ["1", "2", "3"].indexOf(selectedTemperature);
       if (0 > temp) { return "";}
       if (!Message.isValidDate(selectedTime)) { return ""; }
 
-      return Message.MessageStartingChar
+      return Message.MessageEndingChar
+            +Message.MessageStartingChar
             +selectedTemperature
             +Message.MessageSeparatorChar
-            +selectedTime.getHours()
+            +Message.pad(selectedTime.getHours(), 2)
             +":"
-            +selectedTime.getMinutes()
+            +Message.pad(selectedTime.getMinutes(), 2)
             +Message.MessageEndingChar;
     }
   }

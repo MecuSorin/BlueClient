@@ -17,7 +17,7 @@ module blueclient {
   	public messageText: string = "";
   	public device: IBluetoothDevice = null;
   	public messages: IMessage[] = [];
-    public selectedTime = new Date();
+    public selectedTime = new Date().setHours(0,0,0,0);
     public selectedTemperature: string = "2";
 
     public isDateValid: boolean = true;
