@@ -10,9 +10,9 @@ module blueclient {
 
     public static FakeMessage = new Message(true, "fake", "fake");
 
-    public static MessageEndingChar = '#';
-    public static MessageStartingChar = '*';
-    public static MessageSeparatorChar = '_';
+    public static MessageEndingChar = '|';
+    public static ReceivedMessageEnding = "|";
+    public static MessageSeparatorChar = '*';
 
     public static isValidDate(date): boolean {
       if ( Object.prototype.toString.call(date) !== "[object Date]" )
@@ -32,11 +32,10 @@ module blueclient {
       if (!Message.isValidDate(selectedTime)) { return ""; }
 
       return Message.MessageEndingChar
-            +Message.MessageStartingChar
             +selectedTemperature
             +Message.MessageSeparatorChar
             +Message.pad(selectedTime.getHours(), 2)
-            +":"
+            +Message.MessageSeparatorChar
             +Message.pad(selectedTime.getMinutes(), 2)
             +Message.MessageEndingChar;
     }
@@ -78,7 +77,8 @@ module blueclient {
     }
 
     public SendMessage = (device: IBluetoothDevice, text: string) => { 
-      var message = this.AddMessage(true, device.id, text + '\n'); 
+      var message = this.AddMessage(true, device.id, text); 
+      console.log(message);   //TODO to remove
       bluetoothSerial.write(text, () => { message.status = 'sent'; }, error => { message.status = 'failed'; });
     };
 
@@ -99,15 +99,15 @@ module blueclient {
           connectDeferrer.resolve();
           this.ErrorsService.addError("Connected...");
 
-          bluetoothSerial.subscribe('n', 
+          bluetoothSerial.subscribe(Message.ReceivedMessageEnding, 
             () => { // on subscribe
-              this.ErrorsService.addError("registered for data reading");
+              this.ErrorsService.addError("data is available");
               var untypedChatDeferrerPromise = <any>chatDeferrer.promise;
               if(0 === untypedChatDeferrerPromise.$$state.status) { //pending
-                bluetoothSerial.readUntil(Message.MessageEndingChar, 
+                bluetoothSerial.readUntil(Message.ReceivedMessageEnding, 
                   data => { //on readuntil success
                     if(data) { 
-                      this.ErrorsService.addError("received message");
+                      this.ErrorsService.addError("readed message");
                       var receivedMessage = this.AddMessage(false, device.id, data);
                       chatDeferrer.notify(receivedMessage); 
                     }

@@ -13,14 +13,29 @@ volatile unsigned long StartAlarmThresholdInMills = MaxMills;
 const int MessageBufferSize = 20;
 char Message[MessageBufferSize];
 volatile int messageCurrentIndex = -1;
-volatile char MessageTerminatorChar = '#';
+volatile char MessageTerminatorChar = '|';
+volatile char MessageInnerDelimitatorChar = '*';
+
+void EatGibberishFromBluetooth(unsigned long mealDurationInmills) {
+  unsigned long clearBluetoothOutputThesholdInMills = millis() + mealDurationInmills;    // waiting 2secs for gibberish from bluetooth
+  while(millis() < clearBluetoothOutputThesholdInMills) {
+    if(bluetooth.available())
+      bluetooth.read();
+  }
+}
 
 void SetupBluetooth() {
   bluetooth.begin(115200);
   bluetooth.print("$$$");
-  delay(100);
+  EatGibberishFromBluetooth(150UL);
   bluetooth.println("U,9600,N");
   bluetooth.begin(9600);
+  EatGibberishFromBluetooth(150UL);
+  bluetooth.print("$$$");
+  EatGibberishFromBluetooth(3000UL);
+  bluetooth.println("---");
+  EatGibberishFromBluetooth(150UL);
+  bluetooth.println("Ready...");
 }
 
 void setup(){
@@ -74,8 +89,8 @@ bool UpdateAlarmCountdown(char hour1, char hour2, char min1, char min2) {
 
 bool ParseMessageAndSet() {
   if( messageCurrentIndex<7
-    || '_' != Message[1]
-    || ':' != Message[4]
+    || MessageInnerDelimitatorChar != Message[1]
+    || MessageInnerDelimitatorChar != Message[4]
     || MessageTerminatorChar != Message[7])
     return false; // invalid message format
   if( !UpdateTemperatureSetting(Message[0]))
@@ -90,20 +105,12 @@ String GetText(char *source, int elements) {
 
 void EchoMessage() {
   bluetooth.print(GetText(Message, messageCurrentIndex));
-  /*for(int i=0; i<= messageCurrentIndex; i++) {
-    bluetooth.write(Message[i]);
-
-    //Serial.print(Message[i]);
-  }
-  //bluetooth.write('\n');
-  */
 }
 
 void SmothTheButter() {
   digitalWrite(pin_out, !digitalRead(pin_out));
-  //Serial.println("smothing the butter :p");
-  bluetooth.println("smothing the butter :p");
-  /*digitalWrite(pin_out, HIGH);    
+  bluetooth.println("warming the butter rutine ...");
+  /*digitalWrite(pin_out, HIGH);    // TODO   
   delay(AlarmDurationInMills);
   digitalWrite(pin_out, LOW);*/
 }
@@ -112,7 +119,7 @@ void loop(){
   if (StartAlarmThresholdInMills < millis()) {
     StartAlarmThresholdInMills = MaxMills;
     SmothTheButter();
-    SetupAlarmOver(0, 1);      // next day   TODO to put 24h-smothing interval
+    SetupAlarmOver(0, 1);      // next day   TODO to put 24h-warming interval
     return;
   }
 
@@ -122,7 +129,7 @@ void loop(){
   }
 
   if(-1 < messageCurrentIndex && MessageTerminatorChar == Message[messageCurrentIndex]) {
-    ParseMessageAndSet(); //      if (ParseMessageAndSet())
+    ParseMessageAndSet(); // TODO     if (ParseMessageAndSet())
       EchoMessage();
     messageCurrentIndex = -1;
     return;

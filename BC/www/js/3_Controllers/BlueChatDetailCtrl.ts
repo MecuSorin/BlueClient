@@ -17,7 +17,7 @@ module blueclient {
   	public messageText: string = "";
   	public device: IBluetoothDevice = null;
   	public messages: IMessage[] = [];
-    public selectedTime = new Date().setHours(0,0,0,0);
+    public selectedTime = new Date( new Date().setHours(0,0,0,0));
     public selectedTemperature: string = "2";
 
     public isDateValid: boolean = true;
@@ -56,7 +56,9 @@ module blueclient {
     };
 
   	public SendMessage = () => {
+      console.log("composing message");     //TODO to remove
       this.messageText = Message.ComposeMessage(this.selectedTime, this.selectedTemperature);
+      console.log(this.messageText);
       if(this.messageText !== "") {
         this.MessagesService.SendMessage(this.device, this.messageText);
       	this.messageText = "";
