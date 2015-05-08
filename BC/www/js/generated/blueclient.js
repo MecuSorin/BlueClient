@@ -143,7 +143,7 @@ var blueclient;
         Message.lastMessageId = 0;
         Message.FakeMessage = new Message(true, "fake", "fake");
         Message.MessageEndingChar = '|';
-        Message.ReceivedMessageEnding = "|\n";
+        Message.ReceivedMessageEnding = "|";
         Message.MessageSeparatorChar = '*';
         return Message;
     })();
@@ -300,8 +300,8 @@ var blueclient;
                 });
                 messagesPipe.chatDeferrer.promise.then(_this.onConnection, _this.onDisconnection, _this.OnMessageReceived);
             };
-            this.SendMessage = function () {
-                console.log("composing message"); //TODO to remove
+            this.SendMessage = function (temp) {
+                _this.selectedTemperature = "" + temp;
                 _this.messageText = blueclient.Message.ComposeMessage(_this.selectedTime, _this.selectedTemperature);
                 console.log(_this.messageText);
                 if (_this.messageText !== "") {
@@ -309,6 +309,9 @@ var blueclient;
                     _this.messageText = "";
                     _this.RefreshScope();
                 }
+            };
+            this.GetTemperatureClass = function (temp) {
+                return "" + (("" + temp) == _this.selectedTemperature ? " selectedTemp" : "");
             };
             this.GetMessageClass = function (message) {
                 if (!message.mine) {
@@ -332,29 +335,55 @@ var blueclient;
     var DevicesCtrl = (function () {
         function DevicesCtrl($scope, DevicesService, ErrorsService) {
             var _this = this;
+            this.$scope = $scope;
             this.DevicesService = DevicesService;
             this.ErrorsService = ErrorsService;
             this.pairedDevicesList = [];
             this.unpairedDevicesList = [];
-            this.RefreshDevicesList = function () {
-                _this.pairedDevicesList = [];
-                _this.unpairedDevicesList = [];
+            this.RefreshScope = function () {
+                if (!_this.$scope.$$phase) {
+                    _this.$scope.$apply();
+                }
+            };
+            this.LoadPairedDevices = function () {
                 try {
+                    _this.pairedDevicesList = [];
                     _this.DevicesService.listPairedDevices()
                         .then(function (devices) { return _this.pairedDevicesList = devices; })
                         .catch(function (reason) { return _this.ErrorsService.addError(reason); })
-                        .finally(function () { return _this.ErrorsService.addError("Done reading paired devices."); });
-                    _this.DevicesService.listUnPairedDevices()
-                        .then(function (devices) { return _this.unpairedDevicesList = devices; })
-                        .catch(function (reason) { return _this.ErrorsService.addError(reason); })
-                        .finally(function () { return _this.ErrorsService.addError("Done reading unpaired devices."); });
+                        .finally(function () {
+                        _this.ErrorsService.addError("Done reading paired devices.");
+                        _this.RefreshScope();
+                    });
                 }
                 catch (err) {
                     _this.ErrorsService.addError(err.message);
                 }
             };
+            this.RefreshDevicesList = function () {
+                _this.LoadPairedDevices();
+                _this.LoadUnpairedDevices();
+            };
             $scope.devicesCtrl = this;
+            this.LoadPairedDevices();
         }
+        DevicesCtrl.prototype.LoadUnpairedDevices = function () {
+            var _this = this;
+            try {
+                this.unpairedDevicesList = [];
+                this.DevicesService.listUnPairedDevices()
+                    .then(function (devices) { return _this.unpairedDevicesList = devices; })
+                    .catch(function (reason) { return _this.ErrorsService.addError(reason); })
+                    .finally(function () {
+                    _this.ErrorsService.addError("Done reading unpaired devices.");
+                    _this.RefreshScope();
+                });
+            }
+            catch (err) {
+                this.ErrorsService.addError(err.message);
+            }
+        };
+        ;
         DevicesCtrl.Alias = "DevicesCtrl";
         DevicesCtrl.$inject = ['$scope', blueclient.BluetoothDevicesService.Alias, blueclient.ErrorsService.Alias];
         return DevicesCtrl;

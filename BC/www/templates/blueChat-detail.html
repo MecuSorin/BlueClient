@@ -16,7 +16,7 @@
   
     <div class="card" ng-show="!ctrl.isConnected">
       <div class="item item-text-wrap">
-           <div class="col text-center" >
+        <div class="col text-center" >
             <button ng-click="ctrl.Connect(true)" class="button button-positive">Connect secure</button>
             <button ng-click="ctrl.Connect(false)" class="button button-positive padding-horizontaly">Connect insecure</button>
         </div>
@@ -24,26 +24,37 @@
     </div>
 
     <div class="card" ng-show="ctrl.isConnected">
-      <div class="item item-text-wrap">
-          <div>
-            <!-- selectorul de timp -->
-            <timepicker ng-model="ctrl.selectedTime" 
-                      ng-change="ctrl.UpdateSendState()" 
-                      minute-step="5" show-meridian="false"></timepicker>
-          </div>
-          <!-- selectorul de temperatura -->
-          <div class="btn-group padding">
-              <label class="btn btn-success" ng-model="ctrl.selectedTemperature" btn-radio="'1'">Low</label>
-              <label class="btn btn-success" ng-model="ctrl.selectedTemperature" btn-radio="'2'">Medium</label>
-              <label class="btn btn-success" ng-model="ctrl.selectedTemperature" btn-radio="'3'">High</label>
-          </div>
-          <div>
-            <!-- butonul care trimite mesajul catre device -->
-            <button class="button button-positive" 
-                  ng-click="ctrl.SendMessage()"
-                  ng-disable="!ctrl.isDateValid">Set device</button>
-          </div>
-        </div>
+      <!-- selectorul de timp  -->
+        <div class="input-group" style="margin-bottom:5px;">
+          <label for="temp">Start warming the butter over:</label>
+          <input type="time" 
+                id="temp"
+                ng-model="ctrl.selectedTime" 
+                ng-change="ctrl.UpdateSendState()"
+                class="form-control time" />
+        
+       <!--  <timepicker ng-model="ctrl.selectedTime" 
+                  ng-change="ctrl.UpdateSendState()" 
+                  minute-step="5" show-meridian="false"></timepicker>  -->
+      </div>
+      <!-- selectorul de temperatura -->
+      <div class="col">
+        <button ng-class="ctrl.GetTemperatureClass(1)" 
+                ng-click="ctrl.SendMessage(1)"
+                ng-disable="!ctrl.isDateValid">
+          <img src="../img/low.png" width="32" height="32" />Low
+        </button>
+        <button ng-class="ctrl.GetTemperatureClass(2)" 
+                ng-click="ctrl.SendMessage(2)"
+                ng-disable="!ctrl.isDateValid">
+          <img src="../img/med.png" width="32" height="32"/>Medium
+        </button>
+        <button ng-class="ctrl.GetTemperatureClass(3)" 
+                ng-click="ctrl.SendMessage(3)"
+                ng-disable="!ctrl.isDateValid">
+          <img src="../img/hig.png" width="32" height="32"/>High
+        </button>
+      </div>
     </div>
 
     <ion-list class="padding-top">

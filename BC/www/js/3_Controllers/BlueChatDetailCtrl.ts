@@ -55,8 +55,8 @@ module blueclient {
 		  messagesPipe.chatDeferrer.promise.then(this.onConnection, this.onDisconnection, this.OnMessageReceived);
     };
 
-  	public SendMessage = () => {
-      console.log("composing message");     //TODO to remove
+  	public SendMessage = (temp: number): void => {
+      this.selectedTemperature = ""+temp;
       this.messageText = Message.ComposeMessage(this.selectedTime, this.selectedTemperature);
       console.log(this.messageText);
       if(this.messageText !== "") {
@@ -66,6 +66,10 @@ module blueclient {
       }
 		};
     
+    public GetTemperatureClass = (temp: number): string => {
+      return "" + ((""+temp) == this.selectedTemperature ? " selectedTemp" : "");
+    }
+
   	public GetMessageClass = (message) => {
     		if(!message.mine) { return 'message-blue'; }
   	};

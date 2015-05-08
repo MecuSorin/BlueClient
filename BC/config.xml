@@ -2,11 +2,11 @@
 <widget id="com.ionicframework.blueclient514462" version="0.0.1" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
   <name>BlueClient</name>
   <description>
-        An Ionic Framework and Cordova project.
+        A project for warming the butter.
     </description>
-  <author email="hi@ionicframework" href="http://ionicframework.com/">
-      Ionic Framework Team
-    </author>
+  <author email="mecumihaisorin@gmail.com" href="http://mvvm.ro/">
+      Mecu Sorin
+  </author>
   <content src="index.html"/>
   <access origin="*"/>
   <preference name="webviewbounce" value="false"/>
