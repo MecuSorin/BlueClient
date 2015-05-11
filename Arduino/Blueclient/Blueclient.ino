@@ -13,8 +13,8 @@ volatile unsigned long StartAlarmThresholdInMills = MaxMills;
 const int MessageBufferSize = 20;
 char Message[MessageBufferSize];
 volatile int messageCurrentIndex = -1;
-volatile char MessageTerminatorChar = '|';
-volatile char MessageInnerDelimitatorChar = '*';
+volatile char MessageTerminatorChar = 'X';
+volatile char MessageInnerDelimitatorChar = 'Y';
 
 void EatGibberishFromBluetooth(unsigned long mealDurationInmills) {
   unsigned long clearBluetoothOutputThesholdInMills = millis() + mealDurationInmills;    // waiting 2secs for gibberish from bluetooth

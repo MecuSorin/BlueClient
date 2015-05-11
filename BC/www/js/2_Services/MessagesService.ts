@@ -10,9 +10,9 @@ module blueclient {
 
     public static FakeMessage = new Message(true, "fake", "fake");
 
-    public static MessageEndingChar = '|';
-    public static ReceivedMessageEnding = "|";
-    public static MessageSeparatorChar = '*';
+    public static MessageEndingChar = 'X';
+    public static ReceivedMessageEnding = 'X';
+    public static MessageSeparatorChar = 'Y';
 
     public static isValidDate(date): boolean {
       if ( Object.prototype.toString.call(date) !== "[object Date]" )

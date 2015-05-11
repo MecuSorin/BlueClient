@@ -4,6 +4,14 @@
 		"selected_items":
 		[
 			[
+				"max",
+				"max-width"
+			],
+			[
+				"tem",
+				"selectedTemperature"
+			],
+			[
 				"Mes",
 				" ● MessageEndingChar (property) blueclient.Message.MessageEndingChar: string"
 			],
@@ -168,29 +176,18 @@
 	"buffers":
 	[
 		{
+			"file": "BC/www/templates/blueChat-detail.html",
+			"settings":
+			{
+				"buffer_size": 2686,
+				"line_ending": "Unix"
+			}
+		},
+		{
 			"file": "BC/www/js/2_Services/MessagesService.ts",
 			"settings":
 			{
 				"buffer_size": 5080,
-				"line_ending": "Windows"
-			}
-		},
-		{
-			"contents": "#include <SoftwareSerial.h>  \n\nconst unsigned long MaxMills = 4294967294UL;\nconst int pin_bluetoothTx = 3;  // Arduino D3 - Tx bluetooth\nconst int pin_bluetoothRx = 2;  // Arduino D2 - Rx bluetooth\nconst int pin_out = 13;         // Arduino led\n\nSoftwareSerial bluetooth(pin_bluetoothTx, pin_bluetoothRx);\n\nvolatile unsigned long AlarmDurationInMills = 1000;\nvolatile unsigned long StartAlarmThresholdInMills = MaxMills;\n\nconst int MessageBufferSize = 20;\nchar Message[MessageBufferSize];\nvolatile int messageCurrentIndex = -1;\nvolatile char MessageTerminatorChar = '|';\nvolatile char MessageInnerDelimitatorChar = '*';\n\nvoid EatGibberishFromBluetooth(unsigned long mealDurationInmills) {\n  unsigned long clearBluetoothOutputThesholdInMills = millis() + mealDurationInmills;    // waiting 2secs for gibberish from bluetooth\n  while(millis() < clearBluetoothOutputThesholdInMills) {\n    if(bluetooth.available())\n      bluetooth.read();\n  }\n}\n\nvoid SetupBluetooth() {\n  bluetooth.begin(115200);\n  bluetooth.print(\"$$$\");\n  EatGibberishFromBluetooth(150UL);\n  bluetooth.println(\"U,9600,N\");\n  bluetooth.begin(9600);\n  EatGibberishFromBluetooth(150UL);\n  bluetooth.print(\"$$$\");\n  EatGibberishFromBluetooth(3000UL);\n  bluetooth.println(\"---\");\n  EatGibberishFromBluetooth(150UL);\n  bluetooth.println(\"Ready...\");\n}\n\nvoid setup(){\n  //Serial.begin(9600);\n  SetupBluetooth();\n  pinMode(pin_out, OUTPUT);  \n}\n\nvoid ReadCharFromBluetooth() {\n  if(bluetooth.available())\n  {\n    char inChar = (char)bluetooth.read(); // Read a character     \n    if(messageCurrentIndex + 2 <= MessageBufferSize) // One less than the size of the array\n    {          \n      Message[++messageCurrentIndex] = inChar; // Store it\n    }  \n  }\n}\n\nbool IsNotDigit(char value) {\n  return '0' > value || value > '9';\n}\n\nint CToI(char value) {\n  return (int)value - 48;\n}\n\nbool UpdateTemperatureSetting(char suggestedValue) {\n  switch (CToI(suggestedValue))\n  {\n    case 1: AlarmDurationInMills = 1000UL; break;\n    case 2: AlarmDurationInMills = 4000UL; break;\n    case 3: AlarmDurationInMills = 8000UL; break;\n    default : return false;  \n  }\n  return true;\n}\n\nvoid SetupAlarmOver(int hours, int minutes) {\n  StartAlarmThresholdInMills = millis() + 60UL * 1000UL * ((unsigned long) ((hours * 60) + minutes));\n}\n\nbool UpdateAlarmCountdown(char hour1, char hour2, char min1, char min2) {\n  if( IsNotDigit(hour1) || IsNotDigit(hour2) || IsNotDigit(min1) || IsNotDigit(min2))\n    return false;   // unsupported format\n  int hours = 10 * CToI(hour1) + CToI(hour2);\n  int minutes = 10 * CToI(min1) + CToI(min2); \n  SetupAlarmOver(hours, minutes); \n  return true;\n}\n\nbool ParseMessageAndSet() {\n  if( messageCurrentIndex<7\n    || MessageInnerDelimitatorChar != Message[1]\n    || MessageInnerDelimitatorChar != Message[4]\n    || MessageTerminatorChar != Message[7])\n    return false; // invalid message format\n  if( !UpdateTemperatureSetting(Message[0]))\n    return false; // invalid temperature setting\n  return UpdateAlarmCountdown(Message[2], Message[3], Message[5], Message[6]);\n}\n\nString GetText(char *source, int elements) {\n  String copy(source);\n  return copy.substring(0, elements);\n}\n\nvoid EchoMessage() {\n  bluetooth.print(GetText(Message, messageCurrentIndex));\n}\n\nvoid SmothTheButter() {\n  digitalWrite(pin_out, !digitalRead(pin_out));\n  bluetooth.println(\"warming the butter rutine ...\");\n  /*digitalWrite(pin_out, HIGH);    // TODO   \n  delay(AlarmDurationInMills);\n  digitalWrite(pin_out, LOW);*/\n}\n\nvoid loop(){\n  if (StartAlarmThresholdInMills < millis()) {\n    StartAlarmThresholdInMills = MaxMills;\n    SmothTheButter();\n    SetupAlarmOver(0, 1);      // next day   TODO to put 24h-warming interval\n    return;\n  }\n\n  if(MessageBufferSize-1 == messageCurrentIndex) {    //flooded, drop the message\n    messageCurrentIndex = -1;\n    return;\n  }\n\n  if(-1 < messageCurrentIndex && MessageTerminatorChar == Message[messageCurrentIndex]) {\n    ParseMessageAndSet(); // TODO     if (ParseMessageAndSet())\n      EchoMessage();\n    messageCurrentIndex = -1;\n    return;\n  }\n\n  ReadCharFromBluetooth();\n}\n",
-			"file": "Arduino/Blueclient/Blueclient.ino",
-			"file_size": 4215,
-			"file_write_time": 130754743508084529,
-			"settings":
-			{
-				"buffer_size": 4076,
-				"line_ending": "Windows"
-			}
-		},
-		{
-			"file": "BC/www/js/3_Controllers/BlueChatDetailCtrl.ts",
-			"settings":
-			{
-				"buffer_size": 2688,
 				"line_ending": "Windows"
 			}
 		},
@@ -250,18 +247,31 @@
 	[
 		"/C/Work/BlueClient",
 		"/C/Work/BlueClient/Arduino",
+		"/C/Work/BlueClient/Arduino/Blueclient",
 		"/C/Work/BlueClient/BC",
+		"/C/Work/BlueClient/BC/resources/android",
 		"/C/Work/BlueClient/BC/www",
 		"/C/Work/BlueClient/BC/www/js",
 		"/C/Work/BlueClient/BC/www/js/2_Services",
-		"/C/Work/BlueClient/BC/www/js/3_Controllers",
 		"/C/Work/BlueClient/BC/www/templates"
 	],
 	"file_history":
 	[
-		"/C/Work/BlueClient/Arduino/schetch.c",
-		"/C/Work/BlueClient/Arduino/Blueclient/Blueclient.ino",
+		"/C/Work/BlueClient/BC/config.xml",
 		"/C/Users/sorin.mecu/AppData/Roaming/Sublime Text 3/Packages/GoSublime/USAGE.md",
+		"/C/Work/BlueClient/BC/www/js/2_Services/bluetoothSerial_mock.ts",
+		"/C/Users/sorin.mecu/Documents/WindowsPowerShell/EnvVarUtility.ps1",
+		"/C/Work/BlueClient/BC/www/js/1_Bootstrap/interfaces.d.ts",
+		"/C/Work/BlueClient/BC/www/js/2_Services/MessagesService.ts",
+		"/C/Work/BlueClient/Arduino/Blueclient/Blueclient.ino",
+		"/C/Work/BlueClient/BC/www/index.html",
+		"/C/Work/BlueClient/BC/www/templates/blueChat-detail.html",
+		"/C/Work/BlueClient/BC/www/js/2_Services/BluetoothDevicesService.ts",
+		"/C/Work/BlueClient/BC/www/js/3_Controllers/DevicesController.ts",
+		"/C/Work/BlueClient/BC/www/js/generated/blueclient.js",
+		"/C/Work/BlueClient/BC/www/js/3_Controllers/BlueChatDetailCtrl.ts",
+		"/C/Work/BlueClient/BC/www/css/style.css",
+		"/C/Work/BlueClient/Arduino/schetch.c",
 		"/C/Work/BlueClient/Arduino/BlueArduinoMicro/Blueclient.ino",
 		"/C/DevKit/arduino-1.6.3/hardware/arduino/avr/libraries/SoftwareSerial/SoftwareSerial.cpp",
 		"/C/DevKit/arduino-1.6.3/hardware/arduino/avr/cores/arduino/HardwareSerial1.cpp",
@@ -269,28 +279,19 @@
 		"/C/DevKit/arduino-1.6.3/hardware/arduino/avr/cores/arduino/HardwareSerial0.cpp",
 		"/C/Work/BlueClient/Arduino/BlueArduinoMicro/BlueArduinoMicro.ino",
 		"/C/DevKit/arduino-1.6.3/hardware/arduino/avr/cores/arduino/HardwareSerial.h",
-		"/C/Work/BlueClient/BC/www/js/2_Services/bluetoothSerial_mock.ts",
-		"/C/Work/BlueClient/BC/www/js/3_Controllers/BlueChatDetailCtrl.ts",
-		"/C/Work/BlueClient/BC/www/js/2_Services/MessagesService.ts",
-		"/C/Work/BlueClient/BC/www/templates/blueChat-detail.html",
-		"/C/Work/BlueClient/BC/www/js/1_Bootstrap/interfaces.d.ts",
 		"/C/Work/BlueClient/BC/www/js/2_Services/ErrorsService.ts",
 		"/C/Work/BlueClient/BC/www/templates/tab-devices.html",
 		"/C/Work/BlueClient/BC/www/js/app.js",
-		"/C/Work/BlueClient/BC/www/index.html",
 		"/C/Users/sorin.mecu/AppData/Roaming/Sublime Text 3/Packages/User/Default (Windows).sublime-keymap",
 		"/C/Users/sorin.mecu/AppData/Roaming/Sublime Text 3/Packages/Default/Default (Windows).sublime-keymap",
-		"/C/Work/BlueClient/BC/www/js/3_Controllers/DevicesController.ts",
 		"/C/Users/sorin.mecu/AppData/Roaming/Sublime Text 3/Packages/User/Preferences.sublime-settings",
 		"/C/Users/sorin.mecu/AppData/Roaming/Sublime Text 3/Packages/Default/Preferences.sublime-settings",
 		"/C/Users/sorin.mecu/AppData/Roaming/Sublime Text 3/Packages/User/Typescript.sublime-settings",
 		"/C/Users/sorin.mecu/AppData/Roaming/Sublime Text 3/Packages/Package Control/Package Control.sublime-settings",
-		"/C/Work/BlueClient/BC/www/js/2_Services/BluetoothDevicesService.ts",
 		"/C/Work/BlueClient/BC/www/js/0_typings/angularjs/angular.d.ts",
 		"/C/Work/BlueClient/BC/www/js/3_Controllers/ErrorController.ts",
 		"/C/Work/BlueClient/tsconfig.json",
 		"/C/Users/sorin.mecu/AppData/Roaming/Sublime Text 3/Packages/ArcticTypescript/lib/commands/Compiler.py",
-		"/C/Work/BlueClient/BC/www/js/generated/blueclient.js",
 		"/C/Work/BlueClient/BC/www/js/3_Services/BlueChatDetailCtrl.ts",
 		"/C/Work/BlueClient/BC/www/js/1_Bootstrap/app.bootstrap.ts",
 		"/C/Users/sorin.mecu/AppData/Roaming/Sublime Text 3/Packages/User/ArcticTypescript.sublime-settings",
@@ -335,7 +336,6 @@
 		"/C/Work/BlueClient/BC/www/js/services.js",
 		"/C/Work/BlueClient/ReadMe.md",
 		"/C/Work/BlueClient/BC/www/js/controllers.js",
-		"/C/Work/BlueClient/BC/www/css/style.css",
 		"/C/Work/BlueClient/BC/plugins/com.megster.cordova.bluetoothserial/examples/Chat/www/js/index.js",
 		"/C/Work/BlueClient/BC/plugins/com.megster.cordova.bluetoothserial/examples/Chat/Arduino/Chat_Sparkfun/Chat_Sparkfun.ino",
 		"/C/Work/BlueClient/.gitconfig",
@@ -347,7 +347,7 @@
 	],
 	"find":
 	{
-		"height": 46.0
+		"height": 39.0
 	},
 	"find_in_files":
 	{
@@ -363,6 +363,12 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			"chatDeferrer",
+			"newMessageStatus",
+			"chatDeferrer",
+			"            <!-- selectorul de timp -->\n            <timepicker ng-model=\"ctrl.selectedTime\" \n                      ng-change=\"ctrl.UpdateSendState()\" \n                      minute-step=\"5\" show-meridian=\"false\"></timepicker>\n",
+			"64",
+			"/ionic",
 			"MessageEndingChar",
 			"MessageStartingChar",
 			"source",
@@ -417,11 +423,100 @@
 	"groups":
 	[
 		{
-			"selected": 0,
+			"selected": 2,
 			"sheets":
 			[
 				{
 					"buffer": 0,
+					"file": "BC/www/templates/blueChat-detail.html",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 2686,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								1935,
+								1935
+							]
+						],
+						"settings":
+						{
+							"BracketHighlighterBusy": false,
+							"bh_regions":
+							[
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content"
+							],
+							"syntax": "Packages/HTML/HTML.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 1116.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
 					"file": "BC/www/js/2_Services/MessagesService.ts",
 					"semi_transient": false,
 					"settings":
@@ -433,8 +528,8 @@
 						"selection":
 						[
 							[
-								57,
-								57
+								2231,
+								2231
 							]
 						],
 						"settings":
@@ -443,46 +538,36 @@
 							"auto_complete": true,
 							"bh_regions":
 							[
-								"bh_double_quote",
-								"bh_double_quote_center",
-								"bh_double_quote_open",
-								"bh_double_quote_close",
-								"bh_double_quote_content",
-								"bh_default",
-								"bh_default_center",
-								"bh_default_open",
-								"bh_default_close",
-								"bh_default_content",
-								"bh_round",
-								"bh_round_center",
-								"bh_round_open",
-								"bh_round_close",
-								"bh_round_content",
-								"bh_angle",
-								"bh_angle_center",
-								"bh_angle_open",
-								"bh_angle_close",
-								"bh_angle_content",
-								"bh_single_quote",
-								"bh_single_quote_center",
-								"bh_single_quote_open",
-								"bh_single_quote_close",
-								"bh_single_quote_content",
 								"bh_unmatched",
 								"bh_unmatched_center",
 								"bh_unmatched_open",
 								"bh_unmatched_close",
 								"bh_unmatched_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
 								"bh_curly",
 								"bh_curly_center",
 								"bh_curly_open",
 								"bh_curly_close",
 								"bh_curly_content",
-								"bh_square",
-								"bh_square_center",
-								"bh_square_open",
-								"bh_square_close",
-								"bh_square_content",
 								"bh_tag",
 								"bh_tag_center",
 								"bh_tag_open",
@@ -493,6 +578,16 @@
 								"bh_regex_open",
 								"bh_regex_close",
 								"bh_regex_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
 								"bh_c_define",
 								"bh_c_define_center",
 								"bh_c_define_open",
@@ -508,96 +603,7 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 0,
-					"type": "text"
-				},
-				{
-					"buffer": 1,
-					"file": "Arduino/Blueclient/Blueclient.ino",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 4076,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								3193,
-								3193
-							]
-						],
-						"settings":
-						{
-							"BracketHighlighterBusy": false,
-							"bh_regions":
-							[
-								"bh_double_quote",
-								"bh_double_quote_center",
-								"bh_double_quote_open",
-								"bh_double_quote_close",
-								"bh_double_quote_content",
-								"bh_default",
-								"bh_default_center",
-								"bh_default_open",
-								"bh_default_close",
-								"bh_default_content",
-								"bh_round",
-								"bh_round_center",
-								"bh_round_open",
-								"bh_round_close",
-								"bh_round_content",
-								"bh_angle",
-								"bh_angle_center",
-								"bh_angle_open",
-								"bh_angle_close",
-								"bh_angle_content",
-								"bh_single_quote",
-								"bh_single_quote_center",
-								"bh_single_quote_open",
-								"bh_single_quote_close",
-								"bh_single_quote_content",
-								"bh_unmatched",
-								"bh_unmatched_center",
-								"bh_unmatched_open",
-								"bh_unmatched_close",
-								"bh_unmatched_content",
-								"bh_curly",
-								"bh_curly_center",
-								"bh_curly_open",
-								"bh_curly_close",
-								"bh_curly_content",
-								"bh_square",
-								"bh_square_center",
-								"bh_square_open",
-								"bh_square_close",
-								"bh_square_content",
-								"bh_tag",
-								"bh_tag_center",
-								"bh_tag_open",
-								"bh_tag_close",
-								"bh_tag_content",
-								"bh_regex",
-								"bh_regex_center",
-								"bh_regex_open",
-								"bh_regex_close",
-								"bh_regex_content",
-								"bh_c_define",
-								"bh_c_define_center",
-								"bh_c_define_open",
-								"bh_c_define_close",
-								"bh_c_define_content"
-							],
-							"syntax": "Packages/C++/C++.tmLanguage",
-							"tab_size": 2,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 2688.0,
+						"translation.y": 1860.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 2,
@@ -605,100 +611,6 @@
 				},
 				{
 					"buffer": 2,
-					"file": "BC/www/js/3_Controllers/BlueChatDetailCtrl.ts",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 2688,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								914,
-								914
-							]
-						],
-						"settings":
-						{
-							"BracketHighlighterBusy": false,
-							"auto_complete": true,
-							"bh_regions":
-							[
-								"bh_double_quote",
-								"bh_double_quote_center",
-								"bh_double_quote_open",
-								"bh_double_quote_close",
-								"bh_double_quote_content",
-								"bh_default",
-								"bh_default_center",
-								"bh_default_open",
-								"bh_default_close",
-								"bh_default_content",
-								"bh_round",
-								"bh_round_center",
-								"bh_round_open",
-								"bh_round_close",
-								"bh_round_content",
-								"bh_angle",
-								"bh_angle_center",
-								"bh_angle_open",
-								"bh_angle_close",
-								"bh_angle_content",
-								"bh_single_quote",
-								"bh_single_quote_center",
-								"bh_single_quote_open",
-								"bh_single_quote_close",
-								"bh_single_quote_content",
-								"bh_unmatched",
-								"bh_unmatched_center",
-								"bh_unmatched_open",
-								"bh_unmatched_close",
-								"bh_unmatched_content",
-								"bh_curly",
-								"bh_curly_center",
-								"bh_curly_open",
-								"bh_curly_close",
-								"bh_curly_content",
-								"bh_square",
-								"bh_square_center",
-								"bh_square_open",
-								"bh_square_close",
-								"bh_square_content",
-								"bh_tag",
-								"bh_tag_center",
-								"bh_tag_open",
-								"bh_tag_close",
-								"bh_tag_content",
-								"bh_regex",
-								"bh_regex_center",
-								"bh_regex_open",
-								"bh_regex_close",
-								"bh_regex_content",
-								"bh_c_define",
-								"bh_c_define_center",
-								"bh_c_define_open",
-								"bh_c_define_close",
-								"bh_c_define_content"
-							],
-							"extensions":
-							[
-								"ts"
-							],
-							"syntax": "Packages/ArcticTypescript/theme/Typescript.tmLanguage",
-							"tab_size": 2,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 3,
-					"type": "text"
-				},
-				{
-					"buffer": 3,
 					"file": "BC/www/js/2_Services/bluetoothSerial_mock.ts",
 					"semi_transient": false,
 					"settings":
@@ -710,8 +622,8 @@
 						"selection":
 						[
 							[
-								838,
-								838
+								902,
+								902
 							]
 						],
 						"settings":
@@ -720,46 +632,36 @@
 							"auto_complete": true,
 							"bh_regions":
 							[
-								"bh_double_quote",
-								"bh_double_quote_center",
-								"bh_double_quote_open",
-								"bh_double_quote_close",
-								"bh_double_quote_content",
-								"bh_default",
-								"bh_default_center",
-								"bh_default_open",
-								"bh_default_close",
-								"bh_default_content",
-								"bh_round",
-								"bh_round_center",
-								"bh_round_open",
-								"bh_round_close",
-								"bh_round_content",
-								"bh_angle",
-								"bh_angle_center",
-								"bh_angle_open",
-								"bh_angle_close",
-								"bh_angle_content",
-								"bh_single_quote",
-								"bh_single_quote_center",
-								"bh_single_quote_open",
-								"bh_single_quote_close",
-								"bh_single_quote_content",
 								"bh_unmatched",
 								"bh_unmatched_center",
 								"bh_unmatched_open",
 								"bh_unmatched_close",
 								"bh_unmatched_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
 								"bh_curly",
 								"bh_curly_center",
 								"bh_curly_open",
 								"bh_curly_close",
 								"bh_curly_content",
-								"bh_square",
-								"bh_square_center",
-								"bh_square_open",
-								"bh_square_close",
-								"bh_square_content",
 								"bh_tag",
 								"bh_tag_center",
 								"bh_tag_open",
@@ -770,6 +672,16 @@
 								"bh_regex_open",
 								"bh_regex_close",
 								"bh_regex_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
 								"bh_c_define",
 								"bh_c_define_center",
 								"bh_c_define_open",
@@ -783,11 +695,11 @@
 							"syntax": "Packages/ArcticTypescript/theme/Typescript.tmLanguage",
 							"translate_tabs_to_spaces": false
 						},
-						"translation.x": 36.0,
-						"translation.y": 0.0,
+						"translation.x": 0.0,
+						"translation.y": 186.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 1,
+					"stack_index": 0,
 					"type": "text"
 				}
 			]
@@ -795,7 +707,7 @@
 	],
 	"incremental_find":
 	{
-		"height": 46.0
+		"height": 49.0
 	},
 	"input":
 	{
@@ -844,7 +756,7 @@
 	"project": "BlueClient.sublime-project",
 	"replace":
 	{
-		"height": 68.0
+		"height": 74.0
 	},
 	"save_all_on_build": true,
 	"select_file":
@@ -882,7 +794,7 @@
 	"show_open_files": false,
 	"show_tabs": true,
 	"side_bar_visible": true,
-	"side_bar_width": 434.0,
+	"side_bar_width": 326.0,
 	"status_bar_visible": true,
 	"template_settings":
 	{
