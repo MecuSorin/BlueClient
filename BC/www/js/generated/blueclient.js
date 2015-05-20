@@ -142,9 +142,9 @@ var blueclient;
         };
         Message.lastMessageId = 0;
         Message.FakeMessage = new Message(true, "fake", "fake");
-        Message.MessageEndingChar = 'X';
-        Message.ReceivedMessageEnding = 'X';
-        Message.MessageSeparatorChar = 'Y';
+        Message.MessageEndingChar = '|';
+        Message.ReceivedMessageEnding = '|';
+        Message.MessageSeparatorChar = '*';
         return Message;
     })();
     blueclient.Message = Message;
@@ -190,16 +190,16 @@ var blueclient;
                 var connectDeferrer = _this.$q.defer();
                 var chatDeferrer = _this.$q.defer();
                 var result = new MessagesPipe(device, connectDeferrer.promise, chatDeferrer);
-                var deviceBlueeToothId = MessagesService.GetDeviceBluetoothIdentifier(device);
+                var deviceBlueToothId = MessagesService.GetDeviceBluetoothIdentifier(device);
                 var connectMethod = (secure ? bluetoothSerial.connect : bluetoothSerial.connectInsecure);
-                connectMethod(deviceBlueeToothId, function () {
+                connectMethod(deviceBlueToothId, function () {
                     connectDeferrer.resolve();
                     _this.ErrorsService.addError("Connected...");
                     bluetoothSerial.subscribe(Message.ReceivedMessageEnding, function () {
                         _this.ErrorsService.addError("data is available");
                         var untypedChatDeferrerPromise = chatDeferrer.promise;
                         if (0 === untypedChatDeferrerPromise.$$state.status) {
-                            bluetoothSerial.readUntil(Message.ReceivedMessageEnding, function (data) {
+                            bluetoothSerial.read(function (data) {
                                 if (data) {
                                     _this.ErrorsService.addError("readed message");
                                     var receivedMessage = _this.AddMessage(false, device.id, data);
@@ -254,6 +254,7 @@ var blueclient;
                     }, 5000);
                 };
                 this.readUntil = function (limiter, a, b) { a("fake read" + blueclient.Message.MessageEndingChar); };
+                this.read = function (a, b) { a("fake read" + blueclient.Message.MessageEndingChar); };
             }
             return BluetoothSerialMock;
         })();

@@ -18,9 +18,9 @@ declare module blueclient {
 	}
 
 	interface IMessagesDictionary {
-    	[deviceId: string]: IMessage[];
+		[deviceId: string]: IMessage[];
 	}
-	
+
 	interface GenericCtrl{}
 
 	interface IBlueChatDetailCtrlScope extends angular.IScope {
@@ -35,12 +35,13 @@ declare module blueclient {
 declare module blueclient.mocks {
 	interface IBluetoothSerialMock {
 		list(after: Function, fail: Function);
-      	discoverUnpaired(after: Function, fail: Function);
-      	write(text: string, after: Function, fail: Function);
+		discoverUnpaired(after: Function, fail: Function);
+		write(text: string, after: Function, fail: Function);
 		connect(idDevice: string, after: Function, fail: Function);
 		connectInsecure(idDevice: string, after: Function, fail: Function);
 		subscribe(messageEndDelimiter: string, after: Function, fail: Function);
 		readUntil(messageEndDelimiter: string, after: Function, fail: Function);
+		read(after: Function, fail: Function);
 	}
 
 
