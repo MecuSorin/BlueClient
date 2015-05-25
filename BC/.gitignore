@@ -4,9 +4,3 @@
 node_modules/
 platforms/
 plugins/
-
-bin
-hooks
-node_modules
-obj
-platforms

@@ -6,7 +6,15 @@ module blueclient {
     		$scope.Refresh = function() { 
     			$scope.Errors = [];
     			$scope.Errors = ErrorsService.Errors; 
+                $scope.DebuggingSpace = [];
+                $scope.DebuggingSpace = myVeryOwnDebuggingSpace; 
     		}
+            $scope.ClearLogs = function() {
+                ErrorsService.Errors = [];
+                myVeryOwnDebuggingSpace = [];
+                this.Refresh();
+            }
+
     		$scope.Refresh();
     	}
 	}

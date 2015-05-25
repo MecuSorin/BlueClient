@@ -49,6 +49,7 @@
                 ng-disable="!ctrl.isDateValid">
           <img src="img/med.png" width="32" height="32"/>Medium
         </button>
+
         <button ng-class="ctrl.GetTemperatureClass(3)" 
                 ng-click="ctrl.SendMessage(3)"
                 ng-disable="!ctrl.isDateValid">
@@ -62,7 +63,5 @@
   			<div ng-class="ctrl.GetMessageClass(message)">{{message.text}}</div><div>{{message.status}}</div>
   		</ion-item>
   	</ion-list>
-
-
   </ion-content>
 </ion-view>

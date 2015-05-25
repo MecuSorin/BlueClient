@@ -5,7 +5,7 @@
 
 angular.module('starter', ['ionic', 'ui.bootstrap', 'blueclient.services', 'blueclient.controllers'])
 
-.run(function ($ionicPlatform, $rootScope) {
+.run(function ($ionicPlatform) {
 
   $ionicPlatform.ready(function() {
     // Hide the accessory bar by default (remove this to show the accessory bar above the keyboard

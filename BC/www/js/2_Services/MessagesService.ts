@@ -11,7 +11,7 @@ module blueclient {
 		public static FakeMessage = new Message(true, "fake", "fake");
 
 		public static MessageEndingChar = '|';
-		public static ReceivedMessageEnding = '|';
+		public static ReceivedMessageEnding = "|";
 		public static MessageSeparatorChar = '*';
 
 		public static isValidDate(date): boolean {
@@ -39,11 +39,18 @@ module blueclient {
 				+Message.pad(selectedTime.getMinutes(), 2)
 				+Message.MessageEndingChar;
 		}
+
+		public static IsValid(messageText: string) : boolean {
+			return 1+1+2+1+2+1 === messageText.length &&
+				Message.MessageSeparatorChar === messageText[1] &&
+				Message.MessageSeparatorChar === messageText[4] &&
+				Message.MessageEndingChar === messageText[7];
+		}
 	}
 
 	export class MessagesPipe {
-		constructor(public device: IBluetoothDevice,
-				public connectPromise: angular.IPromise<void>,
+		constructor(public device: IBluetoothDevice, 
+				public connectPromise: angular.IPromise<void>,  
 				public chatDeferrer: angular.IDeferred<IMessage>) {}
 
 	}
@@ -64,9 +71,19 @@ module blueclient {
 			return chatWithId;
 		};
 
+		private static ToString(text: number[]): string {
+			var out = "";
+			for(var i=0; i< text.length; i++) { out = out+String.fromCharCode(text[i]) ;}
+
+			for(var i=0; i< text.length; i++) { out = out+text[i]; }
+			out = out + ' caractere: '+text.length;
+
+			return out;
+		}
+
 		private AddMessage = (byMe: boolean, deviceId:string, text: string): IMessage => {
 			var chatWithId = this.GetMessagesWithDeviceId(deviceId);
-			var newMessageStatus =	(byMe) ? 'pending' : 'received';
+			var newMessageStatus =  (byMe) ? 'pending' : 'received';
 			var result = new Message(byMe, text, newMessageStatus);
 			chatWithId.unshift(result);
 			return result;
@@ -76,9 +93,9 @@ module blueclient {
 			return device.address;
 		}
 
-		public SendMessage = (device: IBluetoothDevice, text: string) => {
-			var message = this.AddMessage(true, device.id, text);
-			console.log(message);	//TODO to remove
+		public SendMessage = (device: IBluetoothDevice, text: string) => { 
+			var message = this.AddMessage(true, device.id, text); 
+			console.log(message);   //TODO to remove
 			bluetoothSerial.write(text, () => { message.status = 'sent'; }, error => { message.status = 'failed'; });
 		};
 
@@ -87,43 +104,46 @@ module blueclient {
 			return this.GetMessagesWithDeviceId(deviceId);
 		};
 
+		private static IsPromisePending<T>(promiseDeferrer: angular.IDeferred<T>):boolean {
+			var untypedPromise = <any>promiseDeferrer.promise;
+			return 0 === untypedPromise.$$state.status;
+		}
+
+
 		public StartListeningDevice = (device, secure): MessagesPipe => {  //bool that choose the type of connection
 			var connectDeferrer = this.$q.defer<void>();
 			var chatDeferrer = this.$q.defer<IMessage>();
 			var result = new MessagesPipe(device, connectDeferrer.promise, chatDeferrer);
 
 			var deviceBlueToothId = MessagesService.GetDeviceBluetoothIdentifier(device);
-			var connectMethod = (secure ? bluetoothSerial.connect : bluetoothSerial.connectInsecure);
+			var connectMethod = (secure ? bluetoothSerial.connect : bluetoothSerial.connectInsecure); 
 			connectMethod(deviceBlueToothId,
-					() => {  //on connect
-						connectDeferrer.resolve();
-						this.ErrorsService.addError("Connected...");
+			() => {  //on connect
+				connectDeferrer.resolve();
+				this.ErrorsService.addError("Connected...");
 
-						bluetoothSerial.subscribe(Message.ReceivedMessageEnding,
-							() => { // on subscribe
-								this.ErrorsService.addError("data is available");
-								var untypedChatDeferrerPromise = <any>chatDeferrer.promise;
-								if(0 === untypedChatDeferrerPromise.$$state.status) { //pending
-									bluetoothSerial.read(
-										data => { //on readuntil success
-											if(data) {
-												this.ErrorsService.addError("readed message");
-												var receivedMessage = this.AddMessage(false, device.id, data);
-												chatDeferrer.notify(receivedMessage);
-											}
-										}, error => { //on readuntil error
-											this.ErrorsService.addError("Failed to read data");
-											chatDeferrer.reject(error);
-										});
-								}
-							}, error => { //on subscribe error
-								this.ErrorsService.addError("Failed to listen device");
-								chatDeferrer.reject(error);
-							});
-					}, error => { //on connect error
-						connectDeferrer.reject(error);
+				bluetoothSerial.subscribe(Message.ReceivedMessageEnding,
+					data => { // on subscribe
+						if(MessagesService.IsPromisePending(chatDeferrer)) { //pending
+							console.log(" BBB - Readed: " + data);
+							if(Message.IsValid(data)) {
+								console.log(" BBB - valid message");
+								this.ErrorsService.addError("Readed message: [" + data + "]");
+								var properMessage = data.substring(0, data.length - 1)
+								var receivedMessage = this.AddMessage(false, device.id, properMessage);
+								chatDeferrer.notify(receivedMessage);
+							}
+						} else {
+							console.log(" BBB - Ignoring data from bluetooth");
+						}
+					}, error => { //on subscribe error
+						this.ErrorsService.addError("Failed to listen device");
 						chatDeferrer.reject(error);
 					});
+			}, error => { //on connect error
+				connectDeferrer.reject(error);
+				chatDeferrer.reject(error);
+			});
 			return result;
 		}
 	}

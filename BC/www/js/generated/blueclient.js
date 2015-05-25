@@ -1,6 +1,5 @@
-/*/// <reference path="../0_typings/angularjs/angular.d.ts" />
+/// <reference path="../0_typings/angularjs/angular.d.ts" />
 /// <reference path="interfaces.d.ts" />
-*/
 var blueclient;
 (function (blueclient) {
     blueclient.blueclientServices = angular.module('blueclient.services', []);
@@ -94,6 +93,9 @@ var blueclient;
             this.addError = function (message) {
                 _this.Errors.unshift(new Error(message));
             };
+            this.addFunkyError = function (message) {
+                _this.addError(JSON.stringify({ some: [123, 234], m: message, x: { a: 'a' } }));
+            };
         }
         ErrorsService.Alias = "ErrorsService";
         return ErrorsService;
@@ -140,10 +142,16 @@ var blueclient;
                 + Message.pad(selectedTime.getMinutes(), 2)
                 + Message.MessageEndingChar;
         };
+        Message.IsValid = function (messageText) {
+            return 1 + 1 + 2 + 1 + 2 + 1 === messageText.length &&
+                Message.MessageSeparatorChar === messageText[1] &&
+                Message.MessageSeparatorChar === messageText[4] &&
+                Message.MessageEndingChar === messageText[7];
+        };
         Message.lastMessageId = 0;
         Message.FakeMessage = new Message(true, "fake", "fake");
         Message.MessageEndingChar = '|';
-        Message.ReceivedMessageEnding = '|';
+        Message.ReceivedMessageEnding = "|";
         Message.MessageSeparatorChar = '*';
         return Message;
     })();
@@ -195,20 +203,19 @@ var blueclient;
                 connectMethod(deviceBlueToothId, function () {
                     connectDeferrer.resolve();
                     _this.ErrorsService.addError("Connected...");
-                    bluetoothSerial.subscribe(Message.ReceivedMessageEnding, function () {
-                        _this.ErrorsService.addError("data is available");
-                        var untypedChatDeferrerPromise = chatDeferrer.promise;
-                        if (0 === untypedChatDeferrerPromise.$$state.status) {
-                            bluetoothSerial.read(function (data) {
-                                if (data) {
-                                    _this.ErrorsService.addError("readed message");
-                                    var receivedMessage = _this.AddMessage(false, device.id, data);
-                                    chatDeferrer.notify(receivedMessage);
-                                }
-                            }, function (error) {
-                                _this.ErrorsService.addError("Failed to read data");
-                                chatDeferrer.reject(error);
-                            });
+                    bluetoothSerial.subscribe(Message.ReceivedMessageEnding, function (data) {
+                        if (MessagesService.IsPromisePending(chatDeferrer)) {
+                            console.log(" BBB - Readed: " + data);
+                            if (Message.IsValid(data)) {
+                                console.log(" BBB - valid message");
+                                _this.ErrorsService.addError("Readed message: [" + data + "]");
+                                var properMessage = data.substring(0, data.length - 1);
+                                var receivedMessage = _this.AddMessage(false, device.id, properMessage);
+                                chatDeferrer.notify(receivedMessage);
+                            }
+                        }
+                        else {
+                            console.log(" BBB - Ignoring data from bluetooth");
                         }
                     }, function (error) {
                         _this.ErrorsService.addError("Failed to listen device");
@@ -221,8 +228,23 @@ var blueclient;
                 return result;
             };
         }
+        MessagesService.ToString = function (text) {
+            var out = "";
+            for (var i = 0; i < text.length; i++) {
+                out = out + String.fromCharCode(text[i]);
+            }
+            for (var i = 0; i < text.length; i++) {
+                out = out + text[i];
+            }
+            out = out + ' caractere: ' + text.length;
+            return out;
+        };
         MessagesService.GetDeviceBluetoothIdentifier = function (device) {
             return device.address;
+        };
+        MessagesService.IsPromisePending = function (promiseDeferrer) {
+            var untypedPromise = promiseDeferrer.promise;
+            return 0 === untypedPromise.$$state.status;
         };
         MessagesService.Alias = "MessagesService";
         MessagesService.$inject = ['$q', blueclient.ErrorsService.Alias];
@@ -254,7 +276,7 @@ var blueclient;
                     }, 5000);
                 };
                 this.readUntil = function (limiter, a, b) { a("fake read" + blueclient.Message.MessageEndingChar); };
-                this.read = function (a, b) { a("fake read" + blueclient.Message.MessageEndingChar); };
+                this.subscribeRawData = function (s, f) { setInterval(function () { s(['f', 'a', 'K', '@']); }, 5000); };
             }
             return BluetoothSerialMock;
         })();
@@ -285,6 +307,7 @@ var blueclient;
                 _this.isDateValid = blueclient.Message.isValidDate(_this.selectedTime);
             };
             this.OnMessageReceived = function (message) {
+                console.log("Following message was received: " + message.text);
                 var a = _this.messages;
                 _this.messages = [];
                 _this.messages = a;
@@ -400,6 +423,13 @@ var blueclient;
             $scope.Refresh = function () {
                 $scope.Errors = [];
                 $scope.Errors = ErrorsService.Errors;
+                $scope.DebuggingSpace = [];
+                $scope.DebuggingSpace = myVeryOwnDebuggingSpace;
+            };
+            $scope.ClearLogs = function () {
+                ErrorsService.Errors = [];
+                myVeryOwnDebuggingSpace = [];
+                this.Refresh();
             };
             $scope.Refresh();
         }
@@ -409,3 +439,4 @@ var blueclient;
     blueclient.ErrCtrl = ErrCtrl;
     blueclient.blueclientControllers.controller(ErrCtrl.Alias, ErrCtrl);
 })(blueclient || (blueclient = {}));
+//# sourceMappingURL=blueclient.js.map

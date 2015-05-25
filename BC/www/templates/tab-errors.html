@@ -1,16 +1,26 @@
 <ion-view view-title="Messages">
-    <ion-content>
-     <div class="row">
-            <div class="col text-center">
-                <button ng-click="Refresh()" class="button button-positive">Refresh</button>
-            </div>
-        </div>
-      <ion-list>
-            <div class="item item-divider">Messages:</div>
-            <ion-item class="item-remove-animate item-avatar item-icon-right"
-                      ng-repeat="error in Errors" type="item-text-wrap" >
-                <h4>{{error}}</h4>
-            </ion-item>
-        </ion-list>
-    </ion-content>
+  <ion-content>
+    <div class="row">
+      <div class="col text-center">
+        <button ng-click="Refresh()" class="button button-positive">Refresh</button>
+        <button ng-click="ClearLogs()" class="button button-energized">Clear log</button>
+      </div>
+    </div>
+    
+    <ion-list>
+      <div class="item item-divider">Cordova args:</div>
+        <ion-item class="item-remove-animate item-avatar item-icon-right"
+                  ng-repeat="cordovaargs in DebuggingSpace" type="item-text-wrap" >
+          <pre>{{cordovaargs}}</pre>
+        </ion-item>
+    </ion-list>
+    
+    <ion-list>
+      <div class="item item-divider">Messages:</div>
+        <ion-item class="item-remove-animate item-avatar item-icon-right"
+                  ng-repeat="error in Errors" type="item-text-wrap" >
+          <h4>{{error}}</h4>
+      </ion-item>
+    </ion-list>
+  </ion-content>
 </ion-view>

@@ -5,7 +5,9 @@ module blueclient {
         public static $inject=['$scope', BluetoothDevicesService.Alias, ErrorsService.Alias];
         public pairedDevicesList: IBluetoothDevice[] = [];
         public unpairedDevicesList: IBluetoothDevice[] = [];
-		constructor(public $scope: IDevicesCtrlScope, public DevicesService: BluetoothDevicesService, public ErrorsService: ErrorsService) {
+		constructor(public $scope: IDevicesCtrlScope, 
+            public DevicesService: BluetoothDevicesService, 
+            public ErrorsService: ErrorsService) {
             $scope.devicesCtrl = this;
             this.LoadPairedDevices();
         }

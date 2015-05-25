@@ -36,7 +36,8 @@ module blueclient {
     };
 
   	private  OnMessageReceived = (message:IMessage) => {
-    	var a = this.messages;
+    	console.log("Following message was received: "+message.text)
+      var a = this.messages;
     	this.messages = [];
     	this.messages = a;
     	this.RefreshScope();

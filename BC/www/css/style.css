@@ -1,17 +1,1 @@
 /* Empty. Add your own CSS if you like */
-.message-blue {
-	color: blue;
-}
-.item-input .bdr{
-    border: 1px solid #000000!important;
-    width: 50%!important;
-}
-
-.selectedTemp {
-	text-decoration: underline;
-	font-weight: bold;
-}
-
-.time {
-	max-width: 100px;
-}

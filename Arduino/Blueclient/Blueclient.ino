@@ -11,10 +11,11 @@ volatile unsigned long AlarmDurationInMills = 1000;
 volatile unsigned long StartAlarmThresholdInMills = MaxMills;
 
 const int MessageBufferSize = 20;
+const int ValidMessageLength = 8;
 char Message[MessageBufferSize];
 volatile int messageCurrentIndex = -1;
-volatile char MessageTerminatorChar = 'X';
-volatile char MessageInnerDelimitatorChar = 'Y';
+volatile char MessageTerminatorChar = '|';
+volatile char MessageInnerDelimitatorChar = '*';
 
 void EatGibberishFromBluetooth(unsigned long mealDurationInmills) {
   unsigned long clearBluetoothOutputThesholdInMills = millis() + mealDurationInmills;    // waiting 2secs for gibberish from bluetooth
@@ -91,7 +92,7 @@ bool ParseMessageAndSet() {
   if( messageCurrentIndex<7
     || MessageInnerDelimitatorChar != Message[1]
     || MessageInnerDelimitatorChar != Message[4]
-    || MessageTerminatorChar != Message[7])
+    || MessageTerminatorChar != Message[ValidMessageLength-1])
     return false; // invalid message format
   if( !UpdateTemperatureSetting(Message[0]))
     return false; // invalid temperature setting
@@ -104,7 +105,11 @@ String GetText(char *source, int elements) {
 }
 
 void EchoMessage() {
-  bluetooth.print(GetText(Message, messageCurrentIndex));
+  String toEcho = "|"+GetText(Message, ValidMessageLength);
+  bluetooth.println(toEcho);
+  //String toEcho = String("|"+GetText(Message, messageCurrentIndex)+"|\n");
+  //bluetooth.print(MessageTerminatorChar);
+  //bluetooth.print(MessageTerminatorChar);
 }
 
 void SmothTheButter() {
@@ -129,8 +134,9 @@ void loop(){
   }
 
   if(-1 < messageCurrentIndex && MessageTerminatorChar == Message[messageCurrentIndex]) {
-    ParseMessageAndSet(); // TODO     if (ParseMessageAndSet())
+    if(ParseMessageAndSet()) {
       EchoMessage();
+    }
     messageCurrentIndex = -1;
     return;
   }

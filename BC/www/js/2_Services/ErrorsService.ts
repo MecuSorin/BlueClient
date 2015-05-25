@@ -15,6 +15,9 @@ module blueclient {
 		public addError = (message: any) => {
 			this.Errors.unshift( new Error(message));
 		}
+		public addFunkyError = (message: any) => {
+			this.addError(JSON.stringify({ some:[123,234] , m: message, x: { a: 'a'}}));
+		}
 	}
 	blueclientServices.service(ErrorsService.Alias, ErrorsService);
 }
