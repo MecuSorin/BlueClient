@@ -13,6 +13,7 @@ module blueclient {
 		public static MessageEndingChar = '|';
 		public static ReceivedMessageEnding = "|";
 		public static MessageSeparatorChar = '*';
+		public static StatusRequestSequence = "?|";
 
 		public static isValidDate(date): boolean {
 			if ( Object.prototype.toString.call(date) !== "[object Date]" )
@@ -40,7 +41,7 @@ module blueclient {
 				+Message.MessageEndingChar;
 		}
 
-		public static IsValid(messageText: string) : boolean {
+		public static IsValidProtocol(messageText: string) : boolean {
 			return 1+1+2+1+2+1 === messageText.length &&
 				Message.MessageSeparatorChar === messageText[1] &&
 				Message.MessageSeparatorChar === messageText[4] &&
@@ -57,9 +58,9 @@ module blueclient {
 
 	export class MessagesService {
 		public static Alias="MessagesService";
-		public static $inject = ['$q', ErrorsService.Alias];
+		public static $inject = ['$q', ErrorsService.Alias, DeviceStatusService.Alias];
 
-		constructor(public $q:angular.IQService, public ErrorsService: ErrorsService) {}
+		constructor(public $q:angular.IQService, public ErrorsService: ErrorsService, public DeviceStatusService: DeviceStatusService) {}
 
 		private Messages: IMessagesDictionary = {};
 
@@ -92,6 +93,11 @@ module blueclient {
 		public static GetDeviceBluetoothIdentifier(device: IBluetoothDevice): string {
 			return device.address;
 		}
+
+		public RequestStatus = (device: IBluetoothDevice) => {
+			console.log("Requested the status");
+			bluetoothSerial.write(Message.StatusRequestSequence, () => {}, error => {});
+		};
 
 		public SendMessage = (device: IBluetoothDevice, text: string) => { 
 			var message = this.AddMessage(true, device.id, text); 
@@ -126,12 +132,14 @@ module blueclient {
 					data => { // on subscribe
 						if(MessagesService.IsPromisePending(chatDeferrer)) { //pending
 							console.log(" BBB - Readed: " + data);
-							if(Message.IsValid(data)) {
+							if(Message.IsValidProtocol(data) ) {
 								console.log(" BBB - valid message");
 								this.ErrorsService.addError("Readed message: [" + data + "]");
 								var properMessage = data.substring(0, data.length - 1)
 								var receivedMessage = this.AddMessage(false, device.id, properMessage);
 								chatDeferrer.notify(receivedMessage);
+							} else {
+								this.DeviceStatusService.SignalKnownState(data);
 							}
 						} else {
 							console.log(" BBB - Ignoring data from bluetooth");
@@ -140,6 +148,7 @@ module blueclient {
 						this.ErrorsService.addError("Failed to listen device");
 						chatDeferrer.reject(error);
 					});
+				this.RequestStatus(device);		// request status
 			}, error => { //on connect error
 				connectDeferrer.reject(error);
 				chatDeferrer.reject(error);

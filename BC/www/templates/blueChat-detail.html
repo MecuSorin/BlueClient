@@ -6,14 +6,15 @@
 -->
 <ion-view view-title="{{ctrl.device.name}}">
   <ion-content>
-    <div class="card">
+    <div class="card" 
+          ng-show="UI.infoVisible">
       <div class="item item-text-wrap">
           <h6><label>Address: {{ctrl.device.address}}</label></h6>
           <h6><label>Id: {{ctrl.device.id}}</label></h6>
           <h6><label>Class: {{ctrl.device.class}}</label></h6>
       </div>
     </div>
-  
+
     <div class="card" ng-show="!ctrl.isConnected">
       <div class="item item-text-wrap">
         <div class="col text-center" >
@@ -56,9 +57,13 @@
           <img src="img/hig.png" width="32" height="32"/>High
         </button>
       </div>
-    </div>
 
-    <ion-list class="padding-top">
+
+    </div>
+    <div class="card" ng-show="ctrl.isConnected">
+      Status: <embossed>{{ctrl.deviceStatus}}</embossed>
+    </div>
+    <ion-list class="padding-top" ng-show="UI.infoVisible">
   		<ion-item ng-repeat="message in ctrl.messages">
   			<div ng-class="ctrl.GetMessageClass(message)">{{message.text}}</div><div>{{message.status}}</div>
   		</ion-item>

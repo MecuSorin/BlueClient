@@ -9,13 +9,15 @@ SoftwareSerial bluetooth(pin_bluetoothTx, pin_bluetoothRx);
 
 volatile unsigned long AlarmDurationInMills = 1000;
 volatile unsigned long StartAlarmThresholdInMills = MaxMills;
-
+volatile unsigned long EndAlarmThresholdInMills = MaxMills;
+volatile int IsWarmingTheButter = 0;
 const int MessageBufferSize = 20;
 const int ValidMessageLength = 8;
 char Message[MessageBufferSize];
 volatile int messageCurrentIndex = -1;
 volatile char MessageTerminatorChar = '|';
 volatile char MessageInnerDelimitatorChar = '*';
+volatile char StatusRequestChar = '?';
 
 void EatGibberishFromBluetooth(unsigned long mealDurationInmills) {
   unsigned long clearBluetoothOutputThesholdInMills = millis() + mealDurationInmills;    // waiting 2secs for gibberish from bluetooth
@@ -40,9 +42,8 @@ void SetupBluetooth() {
 }
 
 void setup(){
-  //Serial.begin(9600);
+  Recharge();
   SetupBluetooth();
-  pinMode(pin_out, OUTPUT);  
 }
 
 void ReadCharFromBluetooth() {
@@ -67,9 +68,9 @@ int CToI(char value) {
 bool UpdateTemperatureSetting(char suggestedValue) {
   switch (CToI(suggestedValue))
   {
-    case 1: AlarmDurationInMills = 1000UL; break;
-    case 2: AlarmDurationInMills = 4000UL; break;
-    case 3: AlarmDurationInMills = 8000UL; break;
+    case 1: AlarmDurationInMills = 20000UL; break;
+    case 2: AlarmDurationInMills = 40000UL; break;
+    case 3: AlarmDurationInMills = 60000UL; break;
     default : return false;  
   }
   return true;
@@ -77,6 +78,7 @@ bool UpdateTemperatureSetting(char suggestedValue) {
 
 void SetupAlarmOver(int hours, int minutes) {
   StartAlarmThresholdInMills = millis() + 60UL * 1000UL * ((unsigned long) ((hours * 60) + minutes));
+  EndAlarmThresholdInMills = MaxMills;
 }
 
 bool UpdateAlarmCountdown(char hour1, char hour2, char min1, char min2) {
@@ -86,6 +88,12 @@ bool UpdateAlarmCountdown(char hour1, char hour2, char min1, char min2) {
   int minutes = 10 * CToI(min1) + CToI(min2); 
   SetupAlarmOver(hours, minutes); 
   return true;
+}
+
+bool ParseStatusRequest() {
+  return messageCurrentIndex >= 1
+          && MessageTerminatorChar == Message[messageCurrentIndex]
+          && StatusRequestChar == Message[-1+messageCurrentIndex];
 }
 
 bool ParseMessageAndSet() {
@@ -105,26 +113,45 @@ String GetText(char *source, int elements) {
 }
 
 void EchoMessage() {
-  String toEcho = "|"+GetText(Message, ValidMessageLength);
+  String toEcho = String(String(MessageTerminatorChar)+GetText(Message, ValidMessageLength));
   bluetooth.println(toEcho);
   //String toEcho = String("|"+GetText(Message, messageCurrentIndex)+"|\n");
   //bluetooth.print(MessageTerminatorChar);
   //bluetooth.print(MessageTerminatorChar);
 }
 
-void SmothTheButter() {
-  digitalWrite(pin_out, !digitalRead(pin_out));
-  bluetooth.println("warming the butter rutine ...");
-  /*digitalWrite(pin_out, HIGH);    // TODO   
-  delay(AlarmDurationInMills);
-  digitalWrite(pin_out, LOW);*/
+void WarmTheButter() {
+  IsWarmingTheButter = 1;
+  pinMode(pin_out, OUTPUT); 
+  digitalWrite(pin_out, HIGH);
+  EndAlarmThresholdInMills = millis()+AlarmDurationInMills;
+  EchoStatus();
+}
+
+void EchoStatus() {
+  String status = IsWarmingTheButter ? "Warming the butter|" : "Recharging|";
+  bluetooth.println(status);
+}
+
+void Recharge() {
+  IsWarmingTheButter = 0;
+  //pinMode(pin_out, INPUT) 
+  //digitalWrite(pin_out, HIGH);
+  pinMode(pin_out, OUTPUT);         //TODO to change after tests
+  digitalWrite(pin_out, LOW);       //TODO to change after tests
 }
 
 void loop(){
+  if(EndAlarmThresholdInMills < millis()) {
+    EndAlarmThresholdInMills = MaxMills;
+    Recharge();
+    EchoStatus();
+    return;
+  }
+
   if (StartAlarmThresholdInMills < millis()) {
-    StartAlarmThresholdInMills = MaxMills;
-    SmothTheButter();
-    SetupAlarmOver(0, 1);      // next day   TODO to put 24h-warming interval
+    SetupAlarmOver(0,2);  // next day   TODO to put 24h-warming interval
+    WarmTheButter();
     return;
   }
 
@@ -136,6 +163,9 @@ void loop(){
   if(-1 < messageCurrentIndex && MessageTerminatorChar == Message[messageCurrentIndex]) {
     if(ParseMessageAndSet()) {
       EchoMessage();
+    }
+    else if(ParseStatusRequest()) {
+      EchoStatus();
     }
     messageCurrentIndex = -1;
     return;

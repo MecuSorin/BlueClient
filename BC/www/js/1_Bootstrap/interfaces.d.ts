@@ -23,11 +23,20 @@ declare module blueclient {
 	
 	interface GenericCtrl{}
 
-	interface IBlueChatDetailCtrlScope extends angular.IScope {
+	interface IBlueUI {
+		showInfoButton: boolean;
+		infoVisible: boolean;
+	}
+
+	interface IBlueScope  extends angular.IScope {
+		UI: IBlueUI;
+	}
+
+	interface IBlueChatDetailCtrlScope extends IBlueScope {
 		ctrl: GenericCtrl;
 	}
 
-	interface IDevicesCtrlScope extends angular.IScope{
+	interface IDevicesCtrlScope extends IBlueScope {
 		devicesCtrl: GenericCtrl;
 	}
 }

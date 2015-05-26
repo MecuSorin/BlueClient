@@ -15,6 +15,7 @@
         "./1_Bootstrap/app.bootstrap.ts",
         "./1_Bootstrap/interfaces.d.ts",
         "./2_Services/BluetoothDevicesService.ts",
+        "./2_Services/DeviceStatusService.ts",
         "./2_Services/ErrorsService.ts",
         "./2_Services/MessagesService.ts",
         "./2_Services/bluetoothSerial_mock.ts",

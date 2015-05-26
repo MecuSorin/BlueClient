@@ -10,15 +10,13 @@ module blueclient.mocks {
 		public connect = (id, a, b) => { a(); };
 		public connectInsecure = (id, a, b) => { a(); };
 		public subscribe = (limiter, a, b) => { this.___a =a;/*b('fake subscribe error');*/setInterval(function(){  
-				a(); 
+				a("Recharging"+Message.MessageEndingChar); 
 		}, 5000);  };
-		public readUntil = (limiter, a, b) => {  /*b('fake read error'); */a("fake read"+Message.MessageEndingChar); };
+		public readUntil = (limiter, a, b) => {  /*b('fake read error'); */a("Recharging"+Message.MessageEndingChar); };
 		public subscribeRawData = (s, f) => { setInterval(function() { s(['f', 'a', 'K', '@']); }, 5000); };
-
-
 	}
 }
 
 module blueclient {
-	export var bluetoothSerial = new mocks.BluetoothSerialMock();
+	//export var bluetoothSerial = new mocks.BluetoothSerialMock();
 }

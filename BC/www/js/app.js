@@ -5,8 +5,8 @@
 
 angular.module('starter', ['ionic', 'ui.bootstrap', 'blueclient.services', 'blueclient.controllers'])
 
-.run(function ($ionicPlatform) {
-
+.run(function ($ionicPlatform, $rootScope) {
+  $rootScope.UI = { showInfoButton: false, infoVisible: false};
   $ionicPlatform.ready(function() {
     // Hide the accessory bar by default (remove this to show the accessory bar above the keyboard
     // for form inputs)
@@ -54,7 +54,7 @@ angular.module('starter', ['ionic', 'ui.bootstrap', 'blueclient.services', 'blue
       views: {
           'tab-devices': {
               templateUrl: 'templates/blueChat-detail.html',
-              controller: 'BlueChatDetailCtrl'
+              controller: 'BlueChatDetailController'
           }
       }
   })

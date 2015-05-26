@@ -1,17 +1,22 @@
 /// <reference path="../1_Bootstrap/app.bootstrap.ts" />
 module blueclient {
-	export class BlueChatDetailCtrl {
-		public static Alias="BlueChatDetailCtrl";
-    public static $inject = ['$scope', MessagesService.Alias, '$stateParams', ErrorsService.Alias, BluetoothDevicesService.Alias];
+	export class BlueChatDetailController {
+		public static Alias="BlueChatDetailController";
+    public static $inject = ['$scope', MessagesService.Alias, '$stateParams', ErrorsService.Alias, BluetoothDevicesService.Alias, DeviceStatusService.Alias];
     
 		constructor(public $scope: IBlueChatDetailCtrlScope, 
                 public MessagesService: MessagesService,
                 $stateParams, 
             		ErrorsService: ErrorsService, 
-                BluetoothDevicesService: BluetoothDevicesService) {
+                BluetoothDevicesService: BluetoothDevicesService,
+                DeviceStatusService: DeviceStatusService) {
   		this.device =  BluetoothDevicesService.getDevice($stateParams.deviceId);
   		this.messages = MessagesService.GetMessages($stateParams.deviceId);
   		this.$scope.ctrl = this;
+      this.$scope.UI.showInfoButton = true;
+      this.$scope.$on('$destroy', ()=> { this.$scope.UI.showInfoButton = false; });
+      DeviceStatusService.RegisterForStatusUpdates().then(null,null, this.UpdateDeviceStatus);
+      DeviceStatusService.SignalUnknownState();
   	}
 
   	public messageText: string = "";
@@ -19,7 +24,7 @@ module blueclient {
   	public messages: IMessage[] = [];
     public selectedTime = new Date( new Date().setHours(0,0,0,0));
     public selectedTemperature: string = "2";
-
+    public deviceStatus: string = "";
     public isDateValid: boolean = true;
     public isConnected: boolean = false;
 
@@ -29,7 +34,10 @@ module blueclient {
   		}
   	};
 
-
+    private UpdateDeviceStatus = (status: string)=> {
+      this.deviceStatus = status;
+      this.RefreshScope();
+    }
 
     public UpdateSendState = ()=> {
       this.isDateValid = Message.isValidDate(this.selectedTime);
@@ -76,5 +84,5 @@ module blueclient {
   	};
   }
 
-  blueclientControllers.controller(BlueChatDetailCtrl.Alias, BlueChatDetailCtrl);
+  blueclientControllers.controller(BlueChatDetailController.Alias, BlueChatDetailController);
 }
