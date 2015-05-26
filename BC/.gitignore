@@ -4,3 +4,4 @@
 node_modules/
 platforms/
 plugins/
+!platforms/android/platform_www/cordova.js

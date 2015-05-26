@@ -1,0 +1,117 @@
+From 6e48085dbb2584f34f93c2fbb67810763bbef780 Mon Sep 17 00:00:00 2001
+From: MECU Sorin <sorin.mecu@mbtelecom.ro>
+Date: Mon, 25 May 2015 15:09:27 +0300
+Subject: [PATCH] Fixed and debugging some issues
+
+---
+ .../com/megster/cordova/BluetoothSerial.java       | 50 ++++++++++++++++++++--
+ 1 file changed, 47 insertions(+), 3 deletions(-)
+
+diff --git a/src/android/com/megster/cordova/BluetoothSerial.java b/src/android/com/megster/cordova/BluetoothSerial.java
+index 4ebc375..4657e3f 100644
+--- a/src/android/com/megster/cordova/BluetoothSerial.java
++++ b/src/android/com/megster/cordova/BluetoothSerial.java
+@@ -63,6 +63,7 @@ public class BluetoothSerial extends CordovaPlugin {
+ 
+     // Debugging
+     private static final String TAG = "BluetoothSerial";
++    private static final String TAGG = "BBB";
+     private static final boolean D = true;
+ 
+     // Message types sent from the BluetoothSerialService Handler
+@@ -133,17 +134,20 @@ public class BluetoothSerial extends CordovaPlugin {
+ 
+         } else if (action.equals(READ_UNTIL)) {
+ 
+-            String interesting = args.getString(0);
+-            callbackContext.success(readUntil(interesting));
++            String interesting = getSafeDelimiter(args.getString(0));
++            String readedMessageToSend = readUntil(interesting);
++            Log.d(TAGG, "Readed until: " + interesting + " the message: " + readedMessageToSend);
++            callbackContext.success(readedMessageToSend);
+ 
+         } else if (action.equals(SUBSCRIBE)) {
+ 
+-            delimiter = args.getString(0);
++            delimiter = getSafeDelimiter(args.getString(0));
+             dataAvailableCallback = callbackContext;
+ 
+             PluginResult result = new PluginResult(PluginResult.Status.NO_RESULT);
+             result.setKeepCallback(true);
+             callbackContext.sendPluginResult(result);
++            Log.d(TAGG, "Subscribed to messages ending in: " + delimiter);
+ 
+         } else if (action.equals(UNSUBSCRIBE)) {
+ 
+@@ -399,16 +403,47 @@ public class BluetoothSerial extends CordovaPlugin {
+     }
+ 
+     private void sendRawDataToSubscriber(byte[] data) {
++        try {
++            String toSend = new String(data, "US-ASCII");
++            if (toSend != null && !toSend.isEmpty()) {
++                PluginResult result = new PluginResult(PluginResult.Status.OK, toSend);
++                result.setKeepCallback(true);
++                rawDataAvailableCallback.sendPluginResult(result);
++            }
++            Log.d(TAGG, "Sended raw data to device: "+toSend);
++        }
++        catch(Exception exc) {
++            Log.e(TAGG, exc.toString());
++        }
++    }
++    /*
++    private void sendRawDataToSubscriber(byte[] data) {
+         if (data != null && data.length > 0) {
+             PluginResult result = new PluginResult(PluginResult.Status.OK, data);
+             result.setKeepCallback(true);
+             rawDataAvailableCallback.sendPluginResult(result);
+         }
+     }
++    
++    private void SendFakeRawData() {
++        try {
++            PluginResult result = new PluginResult(PluginResult.Status.OK, "SalutDinspreBluetooth");
++            result.setKeepCallback(true);
++            rawDataAvailableCallback.sendPluginResult(result);
++            Log.w("BBB", "Data sended to javascript");
++        }
++        catch(Exception someError)
++        {
++            Log.e("BBB", someError.toString());
++        }
++    }
++    */
+ 
+     private void sendDataToSubscriber() {
++        Log.d(TAGG, "Current buffer is: " + buffer.toString());
+         String data = readUntil(delimiter);
+         if (data != null && data.length() > 0) {
++            Log.d(TAGG, "Using the delimiter: "+delimiter+" notifiedreaded: "+data);
+             PluginResult result = new PluginResult(PluginResult.Status.OK, data);
+             result.setKeepCallback(true);
+             dataAvailableCallback.sendPluginResult(result);
+@@ -430,11 +465,20 @@ public class BluetoothSerial extends CordovaPlugin {
+ 
+     private String readUntil(String c) {
+         String data = "";
++        //Log.d(TAGG, "Current buffer is: " + buffer.toString());
+         int index = buffer.indexOf(c, 0);
+         if (index > -1) {
+             data = buffer.substring(0, index + c.length());
+             buffer.delete(0, index + c.length());
+         }
++        //Log.d(TAGG, "Using the delimiter: "+c+" readed: "+data);
+         return data;
+     }
++
++
++    private String getSafeDelimiter(String delimiter) {
++        if(null == delimiter || delimiter.isEmpty())
++            return System.getProperty("line.separator");
++        return delimiter.substring(0,1);
++    }
+ }
+-- 
+1.9.5.msysgit.1
+

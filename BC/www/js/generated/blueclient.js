@@ -17,7 +17,7 @@ var blueclient;
             this.listPairedDevices = function () {
                 var deferred = _this.$q.defer();
                 try {
-                    bluetoothSerial.list(function (devicesFound) {
+                    blueclient.bluetoothSerial.list(function (devicesFound) {
                         deferred.resolve(devicesFound);
                         _this.pairedList = devicesFound;
                     }, function (reason) {
@@ -34,7 +34,7 @@ var blueclient;
             this.listUnPairedDevices = function () {
                 var deferred = _this.$q.defer();
                 try {
-                    bluetoothSerial.discoverUnpaired(function (devicesFound) {
+                    blueclient.bluetoothSerial.discoverUnpaired(function (devicesFound) {
                         deferred.resolve(devicesFound);
                         _this.unpairedList = devicesFound;
                     }, function (reason) {
@@ -188,7 +188,7 @@ var blueclient;
             this.SendMessage = function (device, text) {
                 var message = _this.AddMessage(true, device.id, text);
                 console.log(message); //TODO to remove
-                bluetoothSerial.write(text, function () { message.status = 'sent'; }, function (error) { message.status = 'failed'; });
+                blueclient.bluetoothSerial.write(text, function () { message.status = 'sent'; }, function (error) { message.status = 'failed'; });
             };
             this.GetMessages = function (deviceId) {
                 _this.ErrorsService.addError("Getting messages for device ...");
@@ -199,11 +199,11 @@ var blueclient;
                 var chatDeferrer = _this.$q.defer();
                 var result = new MessagesPipe(device, connectDeferrer.promise, chatDeferrer);
                 var deviceBlueToothId = MessagesService.GetDeviceBluetoothIdentifier(device);
-                var connectMethod = (secure ? bluetoothSerial.connect : bluetoothSerial.connectInsecure);
+                var connectMethod = (secure ? blueclient.bluetoothSerial.connect : blueclient.bluetoothSerial.connectInsecure);
                 connectMethod(deviceBlueToothId, function () {
                     connectDeferrer.resolve();
                     _this.ErrorsService.addError("Connected...");
-                    bluetoothSerial.subscribe(Message.ReceivedMessageEnding, function (data) {
+                    blueclient.bluetoothSerial.subscribe(Message.ReceivedMessageEnding, function (data) {
                         if (MessagesService.IsPromisePending(chatDeferrer)) {
                             console.log(" BBB - Readed: " + data);
                             if (Message.IsValid(data)) {
@@ -282,6 +282,10 @@ var blueclient;
         })();
         mocks.BluetoothSerialMock = BluetoothSerialMock;
     })(mocks = blueclient.mocks || (blueclient.mocks = {}));
+})(blueclient || (blueclient = {}));
+var blueclient;
+(function (blueclient) {
+    blueclient.bluetoothSerial = new blueclient.mocks.BluetoothSerialMock();
 })(blueclient || (blueclient = {}));
 /// <reference path="../1_Bootstrap/app.bootstrap.ts" />
 var blueclient;

@@ -196,13 +196,34 @@
 	"buffers":
 	[
 		{
-			"contents": "#include <SoftwareSerial.h>  \n\nconst unsigned long MaxMills = 4294967294UL;\nconst int pin_bluetoothTx = 3;  // Arduino D3 - Tx bluetooth\nconst int pin_bluetoothRx = 2;  // Arduino D2 - Rx bluetooth\nconst int pin_out = 13;         // Arduino led\n\nSoftwareSerial bluetooth(pin_bluetoothTx, pin_bluetoothRx);\n\nvolatile unsigned long AlarmDurationInMills = 1000;\nvolatile unsigned long StartAlarmThresholdInMills = MaxMills;\n\nconst int MessageBufferSize = 20;\nconst int ValidMessageLength = 8;\nchar Message[MessageBufferSize];\nvolatile int messageCurrentIndex = -1;\nvolatile char MessageTerminatorChar = '|';\nvolatile char MessageInnerDelimitatorChar = '*';\n\nvoid EatGibberishFromBluetooth(unsigned long mealDurationInmills) {\n  unsigned long clearBluetoothOutputThesholdInMills = millis() + mealDurationInmills;    // waiting 2secs for gibberish from bluetooth\n  while(millis() < clearBluetoothOutputThesholdInMills) {\n    if(bluetooth.available())\n      bluetooth.read();\n  }\n}\n\nvoid SetupBluetooth() {\n  bluetooth.begin(115200);\n  bluetooth.print(\"$$$\");\n  EatGibberishFromBluetooth(150UL);\n  bluetooth.println(\"U,9600,N\");\n  bluetooth.begin(9600);\n  EatGibberishFromBluetooth(150UL);\n  bluetooth.print(\"$$$\");\n  EatGibberishFromBluetooth(3000UL);\n  bluetooth.println(\"---\");\n  EatGibberishFromBluetooth(150UL);\n  bluetooth.println(\"Ready...\");\n}\n\nvoid setup(){\n  //Serial.begin(9600);\n  SetupBluetooth();\n  pinMode(pin_out, OUTPUT);  \n}\n\nvoid ReadCharFromBluetooth() {\n  if(bluetooth.available())\n  {\n    char inChar = (char)bluetooth.read(); // Read a character     \n    if(messageCurrentIndex + 2 <= MessageBufferSize) // One less than the size of the array\n    {          \n      Message[++messageCurrentIndex] = inChar; // Store it\n    }  \n  }\n}\n\nbool IsNotDigit(char value) {\n  return '0' > value || value > '9';\n}\n\nint CToI(char value) {\n  return (int)value - 48;\n}\n\nbool UpdateTemperatureSetting(char suggestedValue) {\n  switch (CToI(suggestedValue))\n  {\n    case 1: AlarmDurationInMills = 1000UL; break;\n    case 2: AlarmDurationInMills = 4000UL; break;\n    case 3: AlarmDurationInMills = 8000UL; break;\n    default : return false;  \n  }\n  return true;\n}\n\nvoid SetupAlarmOver(int hours, int minutes) {\n  StartAlarmThresholdInMills = millis() + 60UL * 1000UL * ((unsigned long) ((hours * 60) + minutes));\n}\n\nbool UpdateAlarmCountdown(char hour1, char hour2, char min1, char min2) {\n  if( IsNotDigit(hour1) || IsNotDigit(hour2) || IsNotDigit(min1) || IsNotDigit(min2))\n    return false;   // unsupported format\n  int hours = 10 * CToI(hour1) + CToI(hour2);\n  int minutes = 10 * CToI(min1) + CToI(min2); \n  SetupAlarmOver(hours, minutes); \n  return true;\n}\n\nbool ParseMessageAndSet() {\n  if( messageCurrentIndex<7\n    || MessageInnerDelimitatorChar != Message[1]\n    || MessageInnerDelimitatorChar != Message[4]\n    || MessageTerminatorChar != Message[ValidMessageLength-1])\n    return false; // invalid message format\n  if( !UpdateTemperatureSetting(Message[0]))\n    return false; // invalid temperature setting\n  return UpdateAlarmCountdown(Message[2], Message[3], Message[5], Message[6]);\n}\n\nString GetText(char *source, int elements) {\n  String copy(source);\n  return copy.substring(0, elements);\n}\n\nvoid EchoMessage() {\n  String toEcho = \"|\"+GetText(Message, ValidMessageLength);\n  bluetooth.println(toEcho);\n  //String toEcho = String(\"|\"+GetText(Message, messageCurrentIndex)+\"|\\n\");\n  //bluetooth.print(MessageTerminatorChar);\n  //bluetooth.print(MessageTerminatorChar);\n}\n\nvoid SmothTheButter() {\n  digitalWrite(pin_out, !digitalRead(pin_out));\n  bluetooth.println(\"warming the butter rutine ...\");\n  /*digitalWrite(pin_out, HIGH);    // TODO   \n  delay(AlarmDurationInMills);\n  digitalWrite(pin_out, LOW);*/\n}\n\nvoid EmptyEndOfMessage(int fromCharToEnd) {\n  for(int i= fromCharToEnd;i<MessageBufferSize; i++)\n    Message[i++]=0;\n}\n\nvoid CleanParsedMessage(int charsToCopy) {\n  int i=0;\n  for(; i< MessageBufferSize-charsToCopy; i++)\n    Message[i] = Message[i+charsToCopy];\n  EmptyEndOfMessage(i);\n  messageCurrentIndex = messageCurrentIndex-charsToCopy;\n  if(messageCurrentIndex<-1)\n    messageCurrentIndex = -1;\n}\n\nvoid loop(){\n  if (StartAlarmThresholdInMills < millis()) {\n    StartAlarmThresholdInMills = MaxMills;\n    SmothTheButter();\n    SetupAlarmOver(0, 1);      // next day   TODO to put 24h-warming interval\n    return;\n  }\n\n  if(MessageBufferSize-1 == messageCurrentIndex) {    //flooded, drop the message\n    CleanParsedMessage(MessageBufferSize);\n    return;\n  }\n\n  if(-1 < messageCurrentIndex && MessageTerminatorChar == Message[messageCurrentIndex]) {\n    if(ParseMessageAndSet()) {\n      EchoMessage();\n      CleanParsedMessage(ValidMessageLength);\n    }\n    else {\n      CleanParsedMessage(MessageBufferSize);\n    }  \n    return;\n  }\n\n  ReadCharFromBluetooth();\n}\n",
 			"file": "Arduino/Blueclient/Blueclient.ino",
-			"file_size": 4946,
-			"file_write_time": 130770280708957505,
 			"settings":
 			{
-				"buffer_size": 4796,
+				"buffer_size": 4298,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "BC/config.xml",
+			"settings":
+			{
+				"buffer_size": 2702,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "BC/www/templates/tab-devices.html",
+			"settings":
+			{
+				"buffer_size": 1379,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "BC/www/js/2_Services/BluetoothDevicesService.ts",
+			"settings":
+			{
+				"buffer_size": 1982,
 				"line_ending": "Windows"
 			}
 		}
@@ -256,16 +277,19 @@
 		"/C/Work/BlueClient/Arduino",
 		"/C/Work/BlueClient/Arduino/Blueclient",
 		"/C/Work/BlueClient/BC",
+		"/C/Work/BlueClient/BC/resources",
+		"/C/Work/BlueClient/BC/resources/android",
 		"/C/Work/BlueClient/BC/www",
+		"/C/Work/BlueClient/BC/www/img",
 		"/C/Work/BlueClient/BC/www/js",
 		"/C/Work/BlueClient/BC/www/js/1_Bootstrap",
-		"/C/Work/BlueClient/BC/www/js/2_Services",
 		"/C/Work/BlueClient/BC/www/js/3_Controllers",
 		"/C/Work/BlueClient/BC/www/js/generated",
 		"/C/Work/BlueClient/BC/www/templates"
 	],
 	"file_history":
 	[
+		"/C/Users/sorin.mecu/AppData/Local/Temp/TortoiseGit/ionic.bundle_e561325.js",
 		"/C/Work/BlueClient/BC/resurse/BluetoothSerial/src/android/com/megster/cordova/BluetoothSerial.java",
 		"/C/Work/BlueClient/BC/www/js/2_Services/MessagesService.ts",
 		"/C/Work/BlueClient/BC/www/js/3_Controllers/BlueChatDetailCtrl.ts",
@@ -382,6 +406,7 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			"aHrefSanitizationWhitelist",
 			"toEcho",
 			"GetText",
 			"readUntil",
@@ -461,15 +486,15 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 4796,
+						"buffer_size": 4298,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								4639,
-								4685
+								4268,
+								4268
 							]
 						],
 						"settings":
@@ -477,36 +502,41 @@
 							"BracketHighlighterBusy": false,
 							"bh_regions":
 							[
-								"bh_angle",
-								"bh_angle_center",
-								"bh_angle_open",
-								"bh_angle_close",
-								"bh_angle_content",
-								"bh_square",
-								"bh_square_center",
-								"bh_square_open",
-								"bh_square_close",
-								"bh_square_content",
-								"bh_c_define",
-								"bh_c_define_center",
-								"bh_c_define_open",
-								"bh_c_define_close",
-								"bh_c_define_content",
 								"bh_unmatched",
 								"bh_unmatched_center",
 								"bh_unmatched_open",
 								"bh_unmatched_close",
 								"bh_unmatched_content",
-								"bh_single_quote",
-								"bh_single_quote_center",
-								"bh_single_quote_open",
-								"bh_single_quote_close",
-								"bh_single_quote_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
 								"bh_double_quote",
 								"bh_double_quote_center",
 								"bh_double_quote_open",
 								"bh_double_quote_close",
 								"bh_double_quote_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
 								"bh_regex",
 								"bh_regex_center",
 								"bh_regex_open",
@@ -517,31 +547,297 @@
 								"bh_tag_open",
 								"bh_tag_close",
 								"bh_tag_content",
-								"bh_curly",
-								"bh_curly_center",
-								"bh_curly_open",
-								"bh_curly_close",
-								"bh_curly_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content",
 								"bh_default",
 								"bh_default_center",
 								"bh_default_open",
 								"bh_default_close",
-								"bh_default_content",
-								"bh_round",
-								"bh_round_center",
-								"bh_round_open",
-								"bh_round_close",
-								"bh_round_content"
+								"bh_default_content"
 							],
 							"syntax": "Packages/C++/C++.tmLanguage",
 							"tab_size": 2,
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 4325.0,
+						"translation.y": 4400.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "BC/config.xml",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 2702,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								1501,
+								1504
+							]
+						],
+						"settings":
+						{
+							"BracketHighlighterBusy": false,
+							"bh_regions":
+							[
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content"
+							],
+							"syntax": "Packages/XML/XML.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 3,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "BC/www/templates/tab-devices.html",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1379,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								286,
+								286
+							]
+						],
+						"settings":
+						{
+							"BracketHighlighterBusy": false,
+							"bh_regions":
+							[
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content"
+							],
+							"syntax": "Packages/HTML/HTML.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "BC/www/js/2_Services/BluetoothDevicesService.ts",
+					"semi_transient": true,
+					"settings":
+					{
+						"buffer_size": 1982,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"BracketHighlighterBusy": false,
+							"auto_complete": true,
+							"bh_regions":
+							[
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content"
+							],
+							"extensions":
+							[
+								"ts"
+							],
+							"syntax": "Packages/ArcticTypescript/theme/Typescript.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
 					"type": "text"
 				}
 			]
@@ -549,7 +845,7 @@
 	],
 	"incremental_find":
 	{
-		"height": 46.0
+		"height": 54.0
 	},
 	"input":
 	{
