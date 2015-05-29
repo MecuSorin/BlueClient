@@ -115,9 +115,6 @@ String GetText(char *source, int elements) {
 void EchoMessage() {
   String toEcho = String(String(MessageTerminatorChar)+GetText(Message, ValidMessageLength));
   bluetooth.println(toEcho);
-  //String toEcho = String("|"+GetText(Message, messageCurrentIndex)+"|\n");
-  //bluetooth.print(MessageTerminatorChar);
-  //bluetooth.print(MessageTerminatorChar);
 }
 
 void WarmTheButter() {

@@ -14,7 +14,9 @@
           <h6><label>Class: {{ctrl.device.class}}</label></h6>
       </div>
     </div>
-
+    <div class="text-center">
+       <img src="img/logo.png" width="256" height="256" />
+    </div>
     <div class="card" ng-show="!ctrl.isConnected">
       <div class="item item-text-wrap">
         <div class="col text-center" >
@@ -26,20 +28,20 @@
 
     <div class="card" ng-show="ctrl.isConnected">
       <!-- selectorul de timp  -->
-        <div class="input-group" style="margin-bottom:5px;">
-          <label for="temp">Start warming the butter over:</label>
-          <input type="time" 
-                id="temp"
-                ng-model="ctrl.selectedTime" 
-                ng-change="ctrl.UpdateSendState()"
-                class="form-control time" />
-        
+      <div class="input-group text-center" style="margin-bottom:5px;">
+        <label for="temp">Start warming the butter over:</label>
+        <input type="time" 
+              id="temp"
+              ng-model="ctrl.selectedTime" 
+              ng-change="ctrl.UpdateSendState()"
+              class="form-control time" />
+      
        <!--  <timepicker ng-model="ctrl.selectedTime" 
                   ng-change="ctrl.UpdateSendState()" 
                   minute-step="5" show-meridian="false"></timepicker>  -->
       </div>
       <!-- selectorul de temperatura -->
-      <div class="col">
+      <div class="col text-center">
         <button ng-class="ctrl.GetTemperatureClass(1)" 
                 ng-click="ctrl.SendMessage(1)"
                 ng-disable="!ctrl.isDateValid">

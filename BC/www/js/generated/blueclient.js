@@ -77,8 +77,12 @@ var blueclient;
 (function (blueclient) {
     var DeviceStatusService = (function () {
         function DeviceStatusService($q) {
+            var _this = this;
             this.CurrentStatus = "Unknown";
             this.deferredStatus = null;
+            this.NotifyProtocolMessageReceived = function (message) {
+                _this.CurrentStatus = message;
+            };
             this.deferredStatus = $q.defer();
         }
         DeviceStatusService.prototype.RegisterForStatusUpdates = function () {
@@ -200,11 +204,12 @@ var blueclient;
     })();
     blueclient.MessagesPipe = MessagesPipe;
     var MessagesService = (function () {
-        function MessagesService($q, ErrorsService, DeviceStatusService) {
+        function MessagesService($q, ErrorsService, DeviceStatusService, $timeout) {
             var _this = this;
             this.$q = $q;
             this.ErrorsService = ErrorsService;
             this.DeviceStatusService = DeviceStatusService;
+            this.$timeout = $timeout;
             this.Messages = {};
             this.GetMessagesWithDeviceId = function (deviceId) {
                 var chatWithId = _this.Messages[deviceId];
@@ -251,6 +256,8 @@ var blueclient;
                                 var properMessage = data.substring(0, data.length - 1);
                                 var receivedMessage = _this.AddMessage(false, device.id, properMessage);
                                 chatDeferrer.notify(receivedMessage);
+                                _this.DeviceStatusService.NotifyProtocolMessageReceived("Programed the device ...");
+                                _this.$timeout(function () { _this.RequestStatus(device); }, 3000);
                             }
                             else {
                                 _this.DeviceStatusService.SignalKnownState(data);
@@ -290,7 +297,7 @@ var blueclient;
             return 0 === untypedPromise.$$state.status;
         };
         MessagesService.Alias = "MessagesService";
-        MessagesService.$inject = ['$q', blueclient.ErrorsService.Alias, blueclient.DeviceStatusService.Alias];
+        MessagesService.$inject = ['$q', blueclient.ErrorsService.Alias, blueclient.DeviceStatusService.Alias, '$timeout'];
         return MessagesService;
     })();
     blueclient.MessagesService = MessagesService;
@@ -305,17 +312,16 @@ var blueclient;
             function BluetoothSerialMock() {
                 var _this = this;
                 this.devices = [{ name: 'salut', id: "1", address: "some address" }, { name: 'blue', id: "2", address: 'something here' }];
-                this.___a = null;
+                this.ceva = 1;
                 this.list = function (a, b) { a(_this.devices); };
                 this.discoverUnpaired = function (a, b) { a(_this.devices); };
-                this.write = function (text, a, b) { a(); if (_this.___a)
-                    _this.___a(); };
+                this.write = function (text, a, b) { a(); };
                 this.connect = function (id, a, b) { a(); };
                 this.connectInsecure = function (id, a, b) { a(); };
                 this.subscribe = function (limiter, a, b) {
-                    _this.___a = a; /*b('fake subscribe error');*/
                     setInterval(function () {
-                        a("Recharging" + blueclient.Message.MessageEndingChar);
+                        a((1 === this.ceva % 2 ? "Recharging" : "1*12*34") + blueclient.Message.MessageEndingChar);
+                        this.ceva += 1;
                     }, 5000);
                 };
                 this.readUntil = function (limiter, a, b) { a("Recharging" + blueclient.Message.MessageEndingChar); };

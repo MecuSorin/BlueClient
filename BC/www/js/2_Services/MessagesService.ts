@@ -58,9 +58,11 @@ module blueclient {
 
 	export class MessagesService {
 		public static Alias="MessagesService";
-		public static $inject = ['$q', ErrorsService.Alias, DeviceStatusService.Alias];
+		public static $inject = ['$q', ErrorsService.Alias, DeviceStatusService.Alias, '$timeout'];
 
-		constructor(public $q:angular.IQService, public ErrorsService: ErrorsService, public DeviceStatusService: DeviceStatusService) {}
+		constructor(public $q:angular.IQService, public ErrorsService: ErrorsService
+			, public DeviceStatusService: DeviceStatusService
+			, public $timeout: angular.ITimeoutService) {}
 
 		private Messages: IMessagesDictionary = {};
 
@@ -138,6 +140,8 @@ module blueclient {
 								var properMessage = data.substring(0, data.length - 1)
 								var receivedMessage = this.AddMessage(false, device.id, properMessage);
 								chatDeferrer.notify(receivedMessage);
+								this.DeviceStatusService.NotifyProtocolMessageReceived("Programed the device ...");
+								this.$timeout(()=> { this.RequestStatus(device);}, 3000);
 							} else {
 								this.DeviceStatusService.SignalKnownState(data);
 							}

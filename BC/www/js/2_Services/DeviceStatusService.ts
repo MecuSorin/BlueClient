@@ -28,6 +28,10 @@ module blueclient {
 				}
 			}
 		}
+
+		public NotifyProtocolMessageReceived = (message: string) => {
+			this.CurrentStatus = message;
+		}
 	}
 	blueclientServices.service(DeviceStatusService.Alias, DeviceStatusService);
 }
